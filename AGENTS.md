@@ -38,4 +38,4 @@ Three kinds of content, three licenses. Don't blur them.
 - Figures are saved through `dggs_sets.plot.save` (palette PNG). Match its style: green fill, black edges, one color.
 - Slides: no `::: notes` blocks, anywhere; the author keeps talking points elsewhere. Image flip sequences are one beat, not N slides.
 - Python: `uv` only, no `python -c`, PEP 723 for scripts, no argparse, single quotes.
-- Git: commit only when asked. The repo is private/local until the talk is published.
+- Git: commit only when asked. The repo is public at github.com/ajfriend/dggs_sets; a push to main publishes the deck.

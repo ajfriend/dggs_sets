@@ -76,3 +76,23 @@ def test_cocompact_is_the_infinite_weight_case():
     assert len(bag) == len(xh3.cocompact(cells))
     zone = xh3.design(weights, 1.0, 'compact')
     assert zone == xh3.compact(cells)
+
+
+def test_design_is_optimal_with_holes(every_subset):
+    '''Cells missing from `weights` (unknown, outside the universe) must stay
+    out, and the answer must still be the best set among the known cells.
+    Under a token higher up, keeping a missing subtree out costs a token.'''
+    member, sizes = every_subset
+    rng = random.Random(2)
+    for _ in range(200):
+        known = [c for c in LEAVES if rng.random() < 0.7]
+        weights = {c: rng.uniform(-1, 1) for c in known}
+        lam = rng.choice([0.05, 0.2, 0.5, 1.0, 2.0])
+        w = np.array([weights.get(c, 0.0) for c in LEAVES])
+        allowed = np.array([c in weights for c in LEAVES], dtype=float)
+        ok = (member @ (1 - allowed)) == 0   # subsets using known cells only
+        for size in SIZE_OF:
+            brute = (member @ w - lam * sizes[size])[ok].max()
+            value, desc, n = _value(weights, lam, size)
+            assert value == pytest.approx(brute, abs=1e-9), size
+            assert len(desc) == n

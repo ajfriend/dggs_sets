@@ -23,11 +23,11 @@ the package, because they can't be regenerated from public data.
 
 - `nyc_h3r10_field.csv.gz`, `nyc_s2l16_field.csv.gz` (`nyc_field('h3')`,
   `nyc_field('s2')`): driving minutes from downtown Brooklyn
-  (40.6928, -73.9866) to every cell in the five-borough box (lat 40.50–40.91,
+  (40.6928, -73.9866) to every cell in the five-borough box (lat 40.50 to 40.91,
   lng -74.25 to -73.70), in H3 res 10 and in S2 level 16, the S2 level closest
   in cell area. Speeds are OpenStreetMap speed limits capped per road class,
   plus signal and stop penalties. Columns: `cell` (H3 hex string or S2
-  token), `minutes` (empty if unreachable) and `status` (`reached` or
+  hex token), `minutes` (empty if unreachable) and `status` (`reached` or
   `unreachable`). Every cell in the box is present.
 
   Derived from OpenStreetMap data: © OpenStreetMap contributors, available

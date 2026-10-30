@@ -17,7 +17,7 @@ Each submodule provides these functions:
 - `compact(cells)` is standard compaction: complete sibling groups are replaced by their parent.
 - `cocompact(cells)` returns the smallest *bag* that describes `cells`.
 - `uncompact(bag, res)` is the parity decoder. It works on the output of both `compact` and `cocompact`.
-- `contains(bag, cell)` is a point query: it counts how many of the cell's ancestors are in the bag and checks whether that number is odd.
+- `contains(bag, cell)` is a membership test: it counts how many of the cell's ancestors are in the bag and checks whether that number is odd.
 - `design(weights, lam, size)` chooses the set S maximizing Σ weights[c] − lam · size(S), where `size` is `'cells'`, `'compact'` or `'cocompact'`. It returns S's description: the cells, the compacted cells, or the bag. Cells missing from `weights` are never chosen. Like `cocompact`, it takes one exact pass up the tree.
 - `cell_tree(cells)` returns the tree above `cells`: a list of (parent, children) pairs, finest first. `compact`, `cocompact` and `design` build it for you, or take it as `tree=` to reuse one, say across a λ sweep.
 - `latlng_to_cell(lat, lng, res)` returns the cell containing a point, and `cell_to_latlng(cell)` returns a cell's center.
@@ -56,7 +56,7 @@ The per-DGGS modules (`h3.compact(cells)` and so on) build the tree for you.
 | `src/dggs_sets/core/tree.py` | `Grid`, `cell_tree`, `descendants`, `cell_to_parent` |
 | `src/dggs_sets/core/compaction.py` | `compact(tree, cells)`, `cocompact(tree, cells)`, `uncompact`, `contains` |
 | `src/dggs_sets/core/design.py` | `design(tree, weights, lam, size)`: the three set-design solvers |
-| `src/dggs_sets/data/` | `states()`, `ct_counties()`, `cells(m, geoms, r)`, `nyc_field('h3' or 's2')`; the boundaries are fetched and cached on first use, sources in its README |
+| `src/dggs_sets/data/` | `states()`, `ct_counties()`, `cellsets(m, geoms, res)`, `nyc_field('h3' or 's2')`; the boundaries are fetched and cached on first use, sources in its README |
 | `src/dggs_sets/plot.py` | drawing helpers: cells, footprints and bags, and `save` (palette PNG) |
 | `scripts/` | the talk's figure and analysis scripts, built on the package |
 | `talk/` | the Quarto deck |
@@ -101,7 +101,7 @@ Each state is compacted and co-compacted on its own, then the counts are summed 
 
 A5 has aperture 4, so it has no resolution near 5 km². Res 11 is the closest in log terms. The smallest states get few cells at these resolutions: DC has 34 H3 cells, so its row is noisy.
 
-The H3 cell, `compact` and `cocompact` counts match h3coco 0.2.0's signed `{cell: ±1}` co-compaction on every state. That was checked once by hand; it isn't part of the tests. That's expected, since how cells are represented doesn't affect the count. A bag and a signed dict carry the same information: a token's sign is + when an even number of its strict ancestors are also tokens, and − when the number is odd.
+The H3 cell, `compact` and `cocompact` counts match h3coco 0.2.0's signed `{cell: ±1}` co-compaction on every state, as expected: how cells are represented doesn't affect the count. (Checked once by hand; it isn't part of the tests.) A bag and a signed dict carry the same information: a token's sign is + when an even number of its strict ancestors are also tokens, and − when the number is odd.
 
 ## Geometric cells and footprints
 
@@ -135,9 +135,9 @@ How far apart G and F are depends on the system. `uv run scripts/footprints.py` 
 
 ## Plots: Connecticut counties
 
-`uv run scripts/plot_ct.py` takes about 8 s. First it draws the whole state in coarse cells, one figure per system and level (`ct_state_{h3,s2,a5}_*.png`: H3 res 7, S2 level 12, A5 res 11, cells of about 5 km², 1,600–3,100 per state, and one level coarser), for the slides that introduce the three cell shapes. Then it fills each county at resolution r (H3 8, S2 14, A5 13), compacts it, and draws three steps to `talk/figs/`:
+`uv run scripts/plot_ct.py` takes about 8 s. First it draws the whole state in coarse cells, one figure per system and level (`ct_state_{h3,s2,a5}_*.png`: H3 res 7, S2 level 12, A5 res 11, cells of about 5 km², 1,600–3,100 for the state, and one level coarser), for the slides that introduce the three cell shapes. Then it fills each county at resolution r (H3 8, S2 14, A5 13), compacts it, and draws three steps to `talk/figs/`:
 
-1. `ct_*_geo_*.png`: the compacted cells, drawn as geometric cells G(c). In H3 and A5, coarse cells gap and overlap with their finer neighbours.
+1. `ct_*_geo_*.png`: the compacted cells, drawn as geometric cells G(c). In H3 and A5, coarse cells gap and overlap with their finer neighbors.
 2. `ct_*_footprint_*.png`: the compacted cells, drawn as footprints F_r(c). These tile exactly.
 3. `ct_*_fine_*.png`: the filled cells at r, covering the same area as the footprints. `ct_counties_h3_7.png` (from `named()`) is the counties at res 7 with their names on, for the slide that introduces them.
 
@@ -159,18 +159,19 @@ Each token is outlined by its footprint. The bag is built up by nesting depth, n
 That way each step only adds or only takes away. Each step draws the set decoded from the tokens added so far. That step's tokens are outlined in black and earlier ones in grey. The last step, `all`, outlines every token the same way. XOR doesn't depend on order, so the result is the same as the query's walk up the ancestors by resolution. The script writes to `talk/figs/coco_*.png`:
 
 - `coco_stuck_*`: the co-compaction pitch. One H3 cell with all of its grandchildren but one: 48 cells, 12 compacted, and 2 as a bag.
-- `coco_phantom_*`: one H3 res-5 cell P, with three of its children as tokens: two neighbours and the centre child. Together their outlines trace the full outline of a fourth child that isn't a token. Counting loops would call that child carved out. Counting its ancestors in the bag, which is just P, correctly says it's in. To read a bag, follow the IDs, not the picture.
+- `coco_ggc_*`: the deck's version, one level deeper: a res-5 cell with all of its res-8 great-grandchildren but one: 342 cells, 18 compacted, and 2 as a bag.
+- `coco_phantom_*`: one H3 res-5 cell P, with three of its children as tokens: two neighbors and the center child. Together their outlines trace the full outline of a fourth child that isn't a token. Counting loops would call that child carved out. Counting its ancestors in the bag, which is just P, correctly says it's in. To read a bag, follow the IDs, not the picture.
 - `coco_ct_{h3,s2}_{r}_*`: Connecticut's state outline, four steps each:
   - H3 r = 7: 124 + 64 + 17 + 5 = 210 cells in the bag, versus 318 compacted.
   - S2 r = 12: 87 + 106 + 17 + 1 = 211 cells in the bag, versus 318 compacted.
 
-  At the coarse resolutions every step is easy to see. The fine ones follow the state outline more closely, and their extra step 4 is a second take-away.
+  Every step is easy to see at these resolutions; step 4 is a second take-away.
 
 ## Set design: a NYC isochrone
 
 <!-- The numbers here and on the slides are copied from plot_design.py's printed output; update them together after a rerun. -->
 
-`uv run scripts/plot_design.py` (about 35 s; it fetches basemap tiles, so it needs a network connection) runs `design` on the 20-minute driving isochrone from downtown Brooklyn. The data is H3 res-10 travel times (`data.nyc_field("h3")`). Weights are w = 20 − minutes, and unreachable cells (water, parks) get w = 0, so they're free. The isochrone is the λ = 0 answer, the most fidelity any zone can have; every other zone keeps a share of it, and that share is what the figures report.
+`uv run scripts/plot_design.py` (about 35 s; it fetches basemap tiles, so it needs a network connection) runs `design` on the 20-minute driving isochrone from downtown Brooklyn. The data is H3 res-10 travel times (`data.nyc_field('h3')`). The value of a cell is v(c) = 20 − minutes (`weights` in the code), and unreachable cells (water, parks) get 0, so they're free. The isochrone has the most fidelity any zone can have, and the λ = 0 answer differs from it only by free cells; every other zone keeps a share of that fidelity, and that share is what the figures report.
 
 | % fidelity | compacted | co-compacted | gain |
 |---|---|---|---|
@@ -183,17 +184,17 @@ That way each step only adds or only takes away. Each step draws the set decoded
 The exact isochrone is 8,825 cells, 3,491 compacted, or 2,037 as a bag. Optimization does most of the work, and co-compaction adds another 1.4–1.8× on top. That splits about evenly into two parts:
 
 - **The encoding.** Co-compacting a compaction-aware zone after the fact gets about 1.15–1.4×, much less than the 1.71× on the exact isochrone. The optimizer has already used up most of the "almost full" groups.
-- **Awareness.** Optimizing with co-compaction in the objective gets about another 1.2–1.25×.
+- **Awareness.** Optimizing with co-compaction in the objective gets about another 1.1–1.5×.
 
 The frontier shows this as a dashed line.
 
-The same example runs in S2 at level 16, from `data.nyc_field("s2")`, and its figures are named `design_s2_*` in the same pattern. Exactly, the isochrone is 8,006 cells, 2,549 compacted, or 1,604 as a bag. Keeping 99% of the fidelity, the zone is 302 compacted cells or 224 co-compacted tokens, 7.2× smaller than the co-compacted isochrone. The numbers are close to H3's.
+The same example runs in S2 at level 16, from `data.nyc_field('s2')`, and its figures are named `design_s2_*` in the same pattern. Exactly, the isochrone is 8,006 cells, 2,549 compacted, or 1,604 as a bag. Keeping 99% of the fidelity, the zone is 302 compacted cells or 224 as a bag, 7.2× smaller than the co-compacted isochrone. The numbers are close to H3's.
 
 The script writes three kinds of map:
 
 - `talk/figs/design_field.png`: the field alone, which the slides explain first;
 - `design_exact.png`: the isochrone, labeled like the field; `design_iso.png`: the same, labeled like the movie frames;
-- `design_{0..11}.png`: the λ movie, 12 penalties from 0.001 to 20.
+- `design_{0..17}.png`: the λ movie, 18 penalties from 0.001 to 2000.
 
 Each map shows:
 
@@ -220,7 +221,7 @@ The `justfile` holds the other repeated operations too (`just` lists them): `tes
 
 Every figure goes through `dggs_sets.plot.save`, which writes a palette PNG: 64 colors for the flat-color figures and 256 for the λ movie, with its basemap and colormap. They look the same as RGBA and are 4–6× smaller, which keeps the deck light enough to host.
 
-Every slide is a `##` heading followed by markdown. There are four layouts:
+Every slide is a `##` heading followed by markdown. There are five layouts:
 
 | layout | markdown |
 |---|---|
@@ -241,11 +242,11 @@ The deck holds both talks, so it works for an hour-long run-through. At FOSS4G t
 
 Part 1, with rough timings:
 
-1. **Opening** (about 1 min). About me, DGGSs and polygons to cells, with Connecticut in each system at two resolutions.
-2. **Cellsets** (about 2 min). A cellset is a set of cells at one resolution, how the talk represents a region; then many named cellsets, with Connecticut's counties as the picture, then the question: which cellsets contain this point? The flat query answers it by checking every cellset, a set comprehension; then the other way, a reverse index (cell → cellsets) built once, so a query is one lookup with no loop over the cellsets. Then the motivation: 17k cells for the counties, 1.8M for the US states at H3 res 7.
-3. **Compaction** (about 3.5 min). The hierarchy as one H3 cell, then its children, grandchildren and great-grandchildren (7x, 49x, 343x), with the convention that "children at res r" means descendants. Compaction as the walk up the tree, California's numbers (521k → 7.2k), then Connecticut's counties uncompacted and compacted.
+1. **Opening** (about 1 min). About me, DGGSs and polygons to cells, with Connecticut in each system at one resolution.
+2. **Cellsets** (about 2 min). A cellset is a set of cells at one resolution, how the talk represents a region; then many named cellsets, with Connecticut's counties as the picture, then the question: which cellsets contain this point? The flat query answers it by checking every cellset, a set comprehension; then the other way, a reverse index (cell → cellsets) built once, so a query is one lookup with no loop over the cellsets. Then the motivation: 17k cells for the counties, 12.5M for the US states at H3 res 8.
+3. **Compaction** (about 3.5 min). The hierarchy as one H3 cell, then its children, grandchildren and great-grandchildren (7x, then 343x three levels down), with the convention that "children at res r" means descendants. Compaction as the walk up the tree, California's numbers (521k → 7.2k), then Connecticut's counties uncompacted and compacted.
 4. **Gaps, and the logical reading** (about 3 min). "What's going on with those gaps?": a point inside the counties but in no compacted cell's polygon. The fix: a compacted cell means its footprint (the Gosper island in H3), which is identical to the uncompacted coverage. Then the query on compacted cellsets: `compact`, the same `reverse_index`, walk up the ancestors with union.
-5. **S2 and A5** (about 2.5 min). S2's children nest, so one picture shows three levels; A5's don't, and the footprint drifts to a triangle or a rhombus. The compacted counties as footprints in all three systems.
+5. **S2 and A5** (about 2.5 min). S2's children nest, so one picture shows four levels; A5's don't, and the footprint drifts to a triangle or a rhombus. The compacted counties as footprints in all three systems.
 6. **Co-compaction** (about 5.5 min). All of a cell's great-grandchildren but one: 342 cells, 18 compacted, 2 in a bag. Bags as multisets read by parity; a 43-cell example as a set, compacted (7) and a bag (3), with its three nesting steps; the Connecticut build-ups (H3 r = 7, S2 r = 12). The bag query is the compacted query with `^=` for `|=`, shown side by side.
 7. **Computing the smallest bag** (about 1.5 min). The sketch: walk up, two bags per cell (positive and negative), a parent combines positives or joins the bag and combines negatives, keep the smaller. Dynamic programming on trees; exact.
 8. **Benchmark** (about 1 min). The US states: compacted and co-compacted as shares of the cells, and the co-compaction gain. Then questions, with the handoff to Part 2: given a set versus designing one.
@@ -269,4 +270,4 @@ uv run pytest    # about 10 s
 
 - Code: [MIT](LICENSE).
 - Slides, text and figures (`talk/`): [CC BY 4.0](talk/LICENSE).
-- Data: the US states are from the Census Bureau (public domain). The NYC drive-time field was computed from OpenStreetMap data and is © OpenStreetMap contributors, under the [ODbL](https://opendatacommons.org/licenses/odbl/). See [AGENTS.md](AGENTS.md) for the reasoning.
+- Data: the US states are from the Census Bureau (public domain). The NYC drive-time fields were computed from OpenStreetMap data and are © OpenStreetMap contributors, under the [ODbL](https://opendatacommons.org/licenses/odbl/). See [AGENTS.md](AGENTS.md) for the reasoning.

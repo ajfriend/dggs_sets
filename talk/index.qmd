@@ -115,7 +115,7 @@ Connecticut<br>A5 · res 10
 :::
 ::::
 
-## Cellset query #1: Loop
+## Cellset query #1: loop
 
 :::: {.columns}
 ::: {.column .code}
@@ -147,7 +147,7 @@ containing(cell)   # {'Hartford'}
 :::
 ::::
 
-## Cellset query #2: Reverse Index
+## Cellset query #2: reverse index
 
 :::: {.columns}
 ::: {.column .code}
@@ -183,17 +183,17 @@ def containing(cell):
 - CT counties at H3 res 8: **17k** cells
 - US states at H3 res 8: **12.5M** cells
 - storage can become a bottleneck
-    - a deliverability zone for every restaurant in US?
+    - a delivery zone for every restaurant in the US?
     - what if you want city-block-level granularity?
 - can we save space without forfeiting accuracy?
 
 ## Solution: Exploit DGGS hierarchy
 
 - DGGS cells typically have a parent-child hierarchy
-    - H3: 7 children per hexagon (6 per pentagons)
+    - H3: 7 children per hexagon (6 per pentagon)
     - S2: 4 children
     - A5: 4 children
-- idea: if all children are present, **represent** them with single parent cell
+- idea: if all children are present, **represent** them with a single parent cell
 
 ## One H3 cell
 
@@ -287,9 +287,9 @@ Awesome, but... what's going on with those gaps/overlaps?
 
 :::: {.columns}
 ::: {.column width="30%"}
-- fix: cells represent geometry of res 8 children
+- fix: cells represent geometry of res 8 descendants
 - no gaps
-- "Gosper Island" or "footprint" of cell
+- "Gosper island" or "footprint" of cell
 :::
 ::: {.column width="70%"}
 ![](figs/ct_h3_footprint_8.png)
@@ -297,7 +297,7 @@ Awesome, but... what's going on with those gaps/overlaps?
 ::::
 
 
-## Logical identical to uncompacted
+## Logically identical to uncompacted
 
 :::: {.columns}
 ::: {.column width="30%"}
@@ -354,7 +354,7 @@ What about S2 and A5?
 - unlike H3, children tile the parent **exactly** geometrically
 - `geometric = logical`: no gaps or overlaps
 - still get savings from compaction
-- logical hierarchical query pattern still works, but so does the "naive" geometric pattern
+- logical hierarchical query pattern still works, but so does a naive geometric point-in-cell check
 :::
 ::: {.column width="55%"}
 ![S2 · level 9, 10, 11, 12](figs/hierarchy_s2_nested.png)
@@ -460,7 +460,7 @@ A5 · res 13<br>compacted: footprints
 :::: {.columns}
 ::: {.column width="40%"}
 - can describe this set with just 2 cells
-    - parent, minus missing child
+    - parent, minus the missing cell
 - can we generalize this idea to improve compaction?
 - "co-compaction"
 :::
@@ -484,7 +484,7 @@ A5 · res 13<br>compacted: footprints
 
 :::: {.columns .gallery}
 ::: {.column width="33%"}
-![set: 43 cells](figs/coco_simple_set.png){width="75%"}
+![cellset: 43 cells](figs/coco_simple_set.png){width="75%"}
 :::
 ::: {.column width="33%"}
 ![compacted: 7 cells](figs/coco_simple_compact.png){width="75%"}
@@ -510,61 +510,61 @@ A5 · res 13<br>compacted: footprints
 ## {background-image="figs/coco_ct_h3_7_step1.png" background-size="contain"}
 
 ::: {.note}
-Connecticut · H3 r = 7<br>step 1 · add 124
+Connecticut · H3 · res 7<br>step 1 · add 124
 :::
 
 ## {background-image="figs/coco_ct_h3_7_step2.png" background-size="contain"}
 
 ::: {.note}
-Connecticut · H3 r = 7<br>step 2 · take away 64
+Connecticut · H3 · res 7<br>step 2 · take away 64
 :::
 
 ## {background-image="figs/coco_ct_h3_7_step3.png" background-size="contain"}
 
 ::: {.note}
-Connecticut · H3 r = 7<br>step 3 · add back 17
+Connecticut · H3 · res 7<br>step 3 · add back 17
 :::
 
 ## {background-image="figs/coco_ct_h3_7_step4.png" background-size="contain"}
 
 ::: {.note}
-Connecticut · H3 r = 7<br>step 4 · take away 5
+Connecticut · H3 · res 7<br>step 4 · take away 5
 :::
 
 ## {background-image="figs/coco_ct_h3_7_all.png" background-size="contain"}
 
 ::: {.note}
-Connecticut · H3 r = 7<br>bag: 210 cells (compacted: 318)
+Connecticut · H3 · res 7<br>bag: 210 cells (compacted: 318)
 :::
 
 ## {background-image="figs/coco_ct_s2_12_step1.png" background-size="contain"}
 
 ::: {.note}
-Connecticut · S2 r = 12<br>step 1 · add 87
+Connecticut · S2 · level 12<br>step 1 · add 87
 :::
 
 ## {background-image="figs/coco_ct_s2_12_step2.png" background-size="contain"}
 
 ::: {.note}
-Connecticut · S2 r = 12<br>step 2 · take away 106
+Connecticut · S2 · level 12<br>step 2 · take away 106
 :::
 
 ## {background-image="figs/coco_ct_s2_12_step3.png" background-size="contain"}
 
 ::: {.note}
-Connecticut · S2 r = 12<br>step 3 · add back 17
+Connecticut · S2 · level 12<br>step 3 · add back 17
 :::
 
 ## {background-image="figs/coco_ct_s2_12_step4.png" background-size="contain"}
 
 ::: {.note}
-Connecticut · S2 r = 12<br>step 4 · take away 1
+Connecticut · S2 · level 12<br>step 4 · take away 1
 :::
 
 ## {background-image="figs/coco_ct_s2_12_all.png" background-size="contain"}
 
 ::: {.note}
-Connecticut · S2 r = 12<br>bag: 211 cells (compacted: 318)
+Connecticut · S2 · level 12<br>bag: 211 cells (compacted: 318)
 :::
 
 
@@ -644,6 +644,7 @@ def containing(cell):
 
 - (co-)compact each state separately
 - sum the cell counts
+- sizes as a share of the cells; gain = compact / co-compact
 
 
 ::: {.split-after-3 .boxed}
@@ -664,7 +665,7 @@ def containing(cell):
 
 DGGS Set Design: Compaction-Aware Optimization
 
-## Motivation: Isochrones
+## Motivation: isochrones
 
 :::: {.columns}
 ::: {.column width="40%"}
@@ -679,11 +680,11 @@ DGGS Set Design: Compaction-Aware Optimization
 :::
 ::::
 
-## Motivation: Isochrones
+## Motivation: isochrones
 
 :::: {.columns}
 ::: {.column width="40%"}
-- Brooklyn: **8,825** H3 res-10 cells
+- 20-minute isochrone: **8,825** H3 res 10 cells
 - many restaurants, storage adds up
 - compact: **3,491** cells
     - 2.5x smaller
@@ -740,7 +741,7 @@ DGGS Set Design: Compaction-Aware Optimization
 - 8 uncompactable cells at **19.6–20.0** minutes
 - drop them all:
     - 8 cells saved
-    - 1.6 minutes of slack given up
+    - 1.6 minutes lost in total
 - worth it?
 :::
 ::: {.column width="60%"}
@@ -751,7 +752,7 @@ DGGS Set Design: Compaction-Aware Optimization
 ## Trade-offs
 
 - select set $S$ from universe $U$, balancing competing objectives:
-    - **fidelity** $F(S)$: $v(c)$ summed over the cells in $S$
+    - **fidelity** $F(S)$: value $v(c)$ summed over the cells in $S$
     - **size** of set, $\|S\|$: raw cells, compacted, or co-compacted
 - find set that maximizes **fidelity − λ · size**
     - $\lambda$ a trade-off parameter
@@ -791,103 +792,103 @@ H3 · res 10<br>the isochrone, compacted
 ## {background-image="figs/design_0.png" background-size="contain"}
 
 ::: {.note}
-λ = 0.001
+H3 · λ = 0.001
 :::
 
 ## {background-image="figs/design_1.png" background-size="contain"}
 
 ::: {.note}
-λ = 0.05
+H3 · λ = 0.05
 :::
 
 ## {background-image="figs/design_2.png" background-size="contain"}
 
 ::: {.note}
-λ = 0.1
+H3 · λ = 0.1
 :::
 
 ## {background-image="figs/design_3.png" background-size="contain"}
 
 ::: {.note}
-λ = 0.2
+H3 · λ = 0.2
 :::
 
 ## {background-image="figs/design_4.png" background-size="contain"}
 
 ::: {.note}
-λ = 0.3
+H3 · λ = 0.3
 :::
 
 ## {background-image="figs/design_5.png" background-size="contain"}
 
 ::: {.note}
-λ = 0.5
+H3 · λ = 0.5
 :::
 
 ## {background-image="figs/design_6.png" background-size="contain"}
 
 ::: {.note}
-λ = 1
+H3 · λ = 1
 :::
 
 ## {background-image="figs/design_7.png" background-size="contain"}
 
 ::: {.note}
-λ = 2
+H3 · λ = 2
 :::
 
 ## {background-image="figs/design_8.png" background-size="contain"}
 
 ::: {.note}
-λ = 3
+H3 · λ = 3
 :::
 
 ## {background-image="figs/design_9.png" background-size="contain"}
 
 ::: {.note}
-λ = 5
+H3 · λ = 5
 :::
 
 ## {background-image="figs/design_10.png" background-size="contain"}
 
 ::: {.note}
-λ = 10
+H3 · λ = 10
 :::
 
 ## {background-image="figs/design_11.png" background-size="contain"}
 
 ::: {.note}
-λ = 20
+H3 · λ = 20
 :::
 
 ## {background-image="figs/design_12.png" background-size="contain"}
 
 ::: {.note}
-λ = 50
+H3 · λ = 50
 :::
 
 ## {background-image="figs/design_13.png" background-size="contain"}
 
 ::: {.note}
-λ = 100
+H3 · λ = 100
 :::
 
 ## {background-image="figs/design_14.png" background-size="contain"}
 
 ::: {.note}
-λ = 200
+H3 · λ = 200
 :::
 
 ## {background-image="figs/design_16.png" background-size="contain"}
 
 ::: {.note}
-λ = 1000
+H3 · λ = 1000
 :::
 
 ## {background-image="figs/design_17.png" background-size="contain"}
 
 ::: {.note}
-λ = 2000
+H3 · λ = 2000
 :::
 
 ## {background-image="figs/design_s2_iso.png" background-size="contain"}
@@ -998,11 +999,11 @@ S2 · λ = 1000
 S2 · λ = 2000
 :::
 
-## H3 fidelity vs size
+## H3 fidelity vs. size
 
 ![](figs/design_frontier.png){.r-stretch}
 
-## Optimization gains
+## H3 optimization gains
 
 ::: {.split-after-1 .boxed}
 | % fidelity | compacted | co-compacted | gain |
