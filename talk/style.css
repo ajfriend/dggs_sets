@@ -1,0 +1,196 @@
+/* Corner text over a full-slide image */
+.reveal .note {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  font-size: 0.6em;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: right;
+  color: #333;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 0.2em 0.5em;
+  border-radius: 0.2em;
+}
+
+/* Code (or a figure) on the left, sized to its content; bullets take the rest */
+.reveal .columns {
+  align-items: center;
+}
+.reveal .slides .columns > .column.code {
+  flex: none;
+  width: auto;
+}
+.reveal .slides .columns > .column:not(.code) {
+  flex: 1;
+}
+.reveal .column ul {
+  font-size: 0.75em;
+}
+.reveal .column li + li {
+  margin-top: 0.5em;
+}
+.reveal .column img {
+  max-height: 520px;
+}
+/* Inline code keeps Quarto's default look (the theme colors it); just a bit smaller */
+.reveal .slides li code {
+  font-size: 0.85em;
+}
+
+.reveal .slides table {
+  font-size: 0.75em;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;   /* digits line up down a column */
+}
+.reveal .slides table th,
+.reveal .slides table td {
+  padding: 0.4em 0.75em;
+  border: none;
+}
+.reveal .slides table th {
+  font-weight: 600;
+  color: #555;
+  border-bottom: 2px solid #333;
+  white-space: nowrap;   /* "co-compacted" stays on one line */
+}
+.reveal .slides table tbody tr:last-child td {
+  border-bottom: 1px solid #bbb;
+}
+
+/* Code boxes: light grey, about 60 characters wide */
+.reveal div.sourceCode {
+  background: #f6f6f4;
+  border: 1px solid #e6e6e2;
+  border-radius: 8px;
+  margin: 0;
+}
+.reveal pre.sourceCode code {
+  font-size: 0.72em;
+  line-height: 1.5;
+  padding: 0.8em 1em;
+  max-height: none;
+}
+
+/* code-line-numbers="4" marks line 4 in yellow, instead of reveal's default
+   of numbering every line and fading the others. (".slides" outranks the
+   Quarto plugin CSS, which loads after this file.) */
+.reveal .slides div.sourceCode pre code.has-line-highlights > span:not(.highlight-line) {
+  opacity: 1;
+}
+.reveal .slides div.sourceCode pre code > span.highlight-line {
+  background: #fde9a8;
+  border-radius: 0.2em;
+}
+.reveal .slides pre.numberSource {
+  margin-left: 0;
+  border-left: none;
+}
+.reveal .slides pre.numberSource code > span {
+  left: 0;
+}
+.reveal .slides pre.numberSource code > span > a:first-child::before {
+  display: none;
+}
+
+.reveal .bad { color: #c0392b; }
+.reveal .good { color: #1e8449; }
+
+/* Placeholder text, to fill in later */
+.reveal .todo { color: #c0392b; font-style: italic; }
+
+/* Part title slides ("## Part 1 {.part}"), with the part's own talk title
+   below. Level 2 on purpose: a level-1 heading would make reveal stack the
+   part's slides vertically, and the right arrow would skip them. */
+.reveal section.part h2 {
+  font-size: 2.6em;
+  margin-top: 1.5em;
+}
+.reveal section.part p {
+  font-size: 1.2em;
+  color: #555;
+}
+
+/* Caption on an image in a column: the corner text, nestled into the
+   image's lower-right corner */
+.reveal .column figure {
+  position: relative;
+  width: fit-content;   /* hug the image, whatever sized it, so the caption sits on the image */
+  margin: 0 auto;
+}
+.reveal .column figure p {
+  margin: 0;
+  display: inline-block;   /* shrink-wrap the image, so the caption sits on it, not the column */
+}
+.reveal .column figure img {
+  margin: 0;
+  display: block;
+}
+.reveal .column figcaption {
+  position: absolute;
+  right: 0.4em;
+  bottom: 0.4em;
+  font-size: 0.6em;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Interlude slides ("## {.interlude .center}"): one line of big text, centered.
+   reveal's own .center class does the vertical centering. */
+.reveal section.interlude {
+  text-align: center;
+}
+.reveal section.interlude p {
+  font-size: 1.6em;
+  line-height: 1.3;
+  margin: 0 1em;
+}
+
+/* A gallery of small captioned images (":::: {.columns .gallery}"): captions
+   below the images, not nestled, since the images are too small for that */
+.reveal .gallery figure {
+  width: auto;
+  text-align: center;
+}
+.reveal .gallery figure p {
+  display: block;
+}
+.reveal .gallery figcaption {
+  position: static;
+  font-size: 0.5em;
+  margin-top: 0.2em;
+}
+
+/* Breathing room between a bullet list and a table that follows it */
+.reveal .slides ul + table,
+.reveal .slides ul + .split-after-3 {
+  margin-top: 1.2em;
+}
+
+/* A table wrapped in ::: {.split-after-3} (or .split-after-1): a rule after
+   the third (or first) column, say inputs on the left and results on the right */
+.reveal .split-after-3 th:nth-child(4),
+.reveal .split-after-3 td:nth-child(4),
+.reveal .split-after-1 th:nth-child(2),
+.reveal .split-after-1 td:nth-child(2) {
+  border-left: 1.5px solid #bbb;
+  padding-left: 1.4em;
+}
+
+/* ::: {.boxed}: the same light grey box the code blocks sit in */
+.reveal .boxed {
+  background: #f6f6f4;
+  border: 1px solid #e6e6e2;
+  border-radius: 8px;
+  padding: 0.4em 0.8em;
+}
+.reveal .boxed table tbody tr:last-child td {
+  border-bottom: none;   /* the box closes the table */
+}
+
+/* KaTeX sets math at 1.21em; inline math then towers over the prose. Display math keeps the default. */
+.reveal .katex { font-size: 1.08em; }
+.reveal .katex-display .katex { font-size: 1.21em; }
+
+/* row labels stay on one line, like the headers */
+.reveal table td:first-child { white-space: nowrap; }

@@ -1,0 +1,1020 @@
+---
+title: "DGGS (Co-)Compaction and Set Design"
+author: "AJ Friend"
+format:
+  revealjs:
+    css: style.css
+    html-math-method: katex
+    highlight-style: atom-one
+    code-line-numbers: false
+    code-copy: false
+    transition: none
+    background-transition: none
+# Slide layouts (more in the README's "Slides" section):
+#   ## Title                   title + bullets, or :::: {.columns}
+#   ## Title                   title + an image filling the rest of the slide
+#   ![](figs/x.png){.r-stretch}
+#   ## {background-image=...}  image only; add ::: {.note} for corner text
+# Code blocks with check="name" are run by tests/test_query_slides.py.
+---
+
+## About
+
+- AJ Friend
+- Waymo Product Data Science
+- Past:
+    - Uber Eats Data Science
+    - `h3` and `h3-py` maintainer and steering committee member
+
+Slides: [ajfriend.com/dggs_sets](https://ajfriend.com/dggs_sets)<br>
+Code: [github.com/ajfriend/dggs_sets](https://github.com/ajfriend/dggs_sets)
+
+<!--
+Timing, Part 1 (2026-10-29): about 23.5 min as it stands, for a 25-min slot.
+Budget by beat: intro + CT in three systems 2 · collections + two queries 3 ·
+too many cells + hierarchy + compaction 3.5 · gaps + logical + compacted query 3 ·
+S2 + A5 + footprints 2.5 · everything-but-one + bags + example 3.5 · CT build-ups 2 ·
+co-compact query + side by side 1.5 · smallest bag 1.5 · benchmark + handoff 1.
+Where to cut if it runs long, in order:
+  1. the S2 Connecticut build-up (5 slides): H3's makes the point        ~1 min
+  2. A5 children + grandchildren: keep the cell and great-grandchildren   ~1 min
+  3. "Computing the smallest bag" down to four lines                      ~1 min
+  4. fold the side-by-side query slide into the co-compact query slide    ~0.5 min
+Dense spots to pace, not cut: the six code slides, "Cellsets to bags",
+"Computing the smallest bag".
+-->
+
+## Part 1 {.part}
+
+Hierarchical (Co-)Compaction for DGGS Cells
+
+## DGGSs
+
+- **discrete global grid systems** tile the globe with indexable **cells** to make geospatial data analysis easier
+- systems use cells with varying shapes and sizes:
+    - **S2**: squares
+    - **H3**: hexagons (and a few pentagons)
+    - **A5**: pentagons
+
+**This talk**: using cells to describe **regions** on the globe, query membership, and store them efficiently
+
+## Sets of cells
+
+- a set of cells, a **cellset**, represents a region on the globe (e.g., countries, habitats, delivery zones)
+- often obtained by converting from a (multi-)polygon
+- granularity defined by DGGS **resolution** (or **level**)
+- within a resolution, cells *tile* the globe (no gaps or overlaps)
+    - easiest if all data shares a single "native" resolution
+
+
+## {background-image="figs/ct_state_s2_12.png" background-size="contain"}
+
+::: {.note}
+Connecticut<br>S2 · level 12
+:::
+
+## {background-image="figs/ct_state_h3_7.png" background-size="contain"}
+
+::: {.note}
+Connecticut<br>H3 · res 7
+:::
+
+## {background-image="figs/ct_state_a5_11.png" background-size="contain"}
+
+::: {.note}
+Connecticut<br>A5 · res 11
+:::
+
+<!-- ## {background-image="figs/ct_state_s2_11.png" background-size="contain"}
+
+::: {.note}
+Connecticut<br>S2 · level 11
+:::
+
+## {background-image="figs/ct_state_h3_6.png" background-size="contain"}
+
+::: {.note}
+Connecticut<br>H3 · res 6
+:::
+
+## {background-image="figs/ct_state_a5_10.png" background-size="contain"}
+
+::: {.note}
+Connecticut<br>A5 · res 10
+::: -->
+
+## Collections of cellsets
+
+:::: {.columns}
+::: {.column width="45%"}
+- often have a collection of (possibly overlapping) cellsets
+- "Which cellsets contain this point/cell?"
+:::
+::: {.column width="55%"}
+![H3 · res 7](figs/ct_counties_h3_7.png)
+:::
+::::
+
+## Cellset query #1: Loop
+
+:::: {.columns}
+::: {.column .code}
+```{.python check="flat"}
+cellsets = {
+    'Fairfield': {'872a10914ffffff', ...},
+    'Hartford': {'872a14b94ffffff', ...},
+    # ...
+}
+
+def containing(cell):
+    return {
+        name
+        for name, cells in cellsets.items()
+        if cell in cells
+    }
+
+cell = latlng_to_cell(41.76, -72.67, 7)
+containing(cell)   # {'Hartford'}
+```
+:::
+::: {.column}
+- convert lat/lng point to a cell at native resolution
+- check if cell contained in each cellset
+- **downside**: loops over every cellset
+- (DGGS theme: discretize *once*, do heavy lifting on discrete objects)
+
+![](figs/ct_query_h3_7.png){width="70%"}
+:::
+::::
+
+## Cellset query #2: Reverse Index
+
+:::: {.columns}
+::: {.column .code}
+```{.python check="flat_index"}
+def reverse_index(cellsets):
+    index = defaultdict(set)
+    for name, cells in cellsets.items():
+        for c in cells:
+            index[c].add(name)
+    return index
+
+index = reverse_index(cellsets)
+# index = {
+#     '872a10914ffffff': {'Fairfield'},
+#     '872a14b94ffffff': {'Hartford'},
+#     ...
+# }
+
+def containing(cell):
+    return index[cell]
+```
+:::
+::: {.column}
+- **reverse index**: cell → containing cellsets, built once
+- query: one lookup (hash table, database); no loop over the cellsets
+- **downside** (to both approaches): storing a large number of cells
+- this is the approach we'll generalize
+:::
+::::
+
+## Too many cells!
+
+- CT counties at H3 res 8: **17k** cells
+- US states at H3 res 8: **12.5M** cells
+- storage can become a bottleneck
+    - a deliverability zone for every restaurant in US?
+    - what if you want city-block-level granularity?
+- can we save space without forfeiting accuracy?
+
+## Solution: Exploit DGGS hierarchy
+
+- DGGS cells typically have a parent-child hierarchy
+    - H3: 7 children per hexagon (6 per pentagons)
+    - S2: 4 children
+    - A5: 4 children
+- idea: if all children are present, **represent** them with single parent cell
+
+## One H3 cell
+
+:::: {.columns}
+::: {.column width="45%"}
+- in H3, cells at resolution `r` have children of res `r+1`
+- resolution levels 0--15
+:::
+::: {.column width="55%"}
+![H3 · res 5](figs/hierarchy_h3_cell.png)
+:::
+::::
+
+## Its children
+
+:::: {.columns}
+::: {.column width="45%"}
+- **geometrically**: 7 children cover a *different* region from their parent
+- **logically**: parent *exactly* represents its children
+- for now, focus on the logical equivalence
+- 7x storage savings!
+:::
+::: {.column width="55%"}
+![H3 · res 6](figs/hierarchy_h3_children.png)
+:::
+::::
+
+## Its grandchildren
+
+:::: {.columns}
+::: {.column width="45%"}
+- cells can **logically** stand in for descendants at any resolution
+- must know the "target" resolution
+:::
+::: {.column width="55%"}
+![H3 · res 7](figs/hierarchy_h3_grandchildren.png)
+:::
+::::
+
+## Its great-grandchildren
+
+:::: {.columns}
+::: {.column width="45%"}
+- 343x savings at 3 levels down
+:::
+::: {.column width="55%"}
+![H3 · res 8](figs/hierarchy_h3_greatgrandchildren.png)
+:::
+::::
+
+## Compaction
+
+- algorithm:
+    - given: a cellset (single resolution)
+    - repeat until no changes:
+        - look for a complete set of 7 children, replace with their parent cell
+- in `h3-py`, just `h3.compact_cells()`
+- outputs far fewer cells, **mixed resolutions**
+- California at H3 res 8: **521k** → **7.2k**, a **72x** reduction!
+
+## {background-image="figs/ct_h3_fine_8.png" background-size="contain"}
+
+::: {.note}
+H3 · res 8<br>uncompacted: 17k cells
+:::
+
+## {background-image="figs/ct_h3_geo_8.png" background-size="contain"}
+
+::: {.note}
+H3 · res 8<br>compacted: 2.7k cells<br>6x savings!
+:::
+
+## {.interlude .center}
+
+Awesome, but... what's going on with those gaps/overlaps?
+
+## Geometric interpretation
+
+:::: {.columns}
+::: {.column width="30%"}
+- problem: geometric gaps in this representation
+- valid points not in *any* cell
+- fix: use **logical** interpretation
+:::
+::: {.column width="70%"}
+![](figs/ct_gap_h3_8.png)
+:::
+::::
+
+## Logical interpretation
+
+:::: {.columns}
+::: {.column width="30%"}
+- fix: cells represent geometry of res 8 children
+- no gaps
+- "Gosper Island" or "footprint" of cell
+:::
+::: {.column width="70%"}
+![](figs/ct_h3_footprint_8.png)
+:::
+::::
+
+
+## Logical identical to uncompacted
+
+:::: {.columns}
+::: {.column width="30%"}
+- geometry of logical interpretation of compacted set is **identical** to uncompacted set
+:::
+::: {.column width="70%"}
+![](figs/ct_h3_fine_8.png)
+:::
+::::
+
+## Querying compacted cellsets
+
+:::: {.columns}
+::: {.column .code}
+```{.python check="compact_index"}
+# input: cellsets, name -> cells at res r
+
+compacted = {
+    name: compact(cells)
+    for name, cells in cellsets.items()
+}
+index = reverse_index(compacted)
+
+def ancestors(cell):
+    for k in range(r + 1):
+        yield cell_to_parent(cell, k)
+
+def containing(cell):
+    out = set()
+    for c in ancestors(cell):
+        out |= index[c]
+    return out
+```
+:::
+::: {.column}
+- we can query the compacted representation directly
+- no need to uncompact first
+- idea:
+    - only target resolution geometry matters
+    - convert lat/lng to cell at that res
+    - "walk up" hierarchy, checking for membership
+    - uses same reverse index
+:::
+::::
+
+## {.interlude .center}
+
+What about S2 and A5?
+
+## S2: squares that nest
+
+:::: {.columns}
+::: {.column width="45%"}
+- unlike H3, children tile the parent **exactly** geometrically
+- `geometric = logical`: no gaps or overlaps
+- still get savings from compaction
+- logical hierarchical query pattern still works, but so does the "naive" geometric pattern
+:::
+::: {.column width="55%"}
+![S2 · level 9, 10, 11, 12](figs/hierarchy_s2_nested.png)
+:::
+::::
+
+## One A5 cell
+
+:::: {.columns}
+::: {.column width="45%"}
+- 4 pentagon children per cell
+- like H3, children don't tile
+- but logical hierarchical query pattern still works
+:::
+::: {.column width="55%"}
+![A5 · res 8](figs/hierarchy_a5_cell.png)
+:::
+::::
+
+## Its children
+
+:::: {.columns}
+::: {.column width="45%"}
+- children don't tile
+:::
+::: {.column width="55%"}
+![A5 · res 9](figs/hierarchy_a5_children.png)
+:::
+::::
+
+## Its grandchildren
+
+:::: {.columns}
+::: {.column width="45%"}
+- geometry drifts: A5's hierarchy lives on a **triangular** lattice
+:::
+::: {.column width="55%"}
+![A5 · res 10](figs/hierarchy_a5_grandchildren.png)
+:::
+::::
+
+## Its great-grandchildren
+
+:::: {.columns}
+::: {.column width="45%"}
+- 64 cells
+- converging to a triangle (or, for other cells, a rhombus)
+- logically still a tree: compaction and queries work the same
+:::
+::: {.column width="55%"}
+![A5 · res 11](figs/hierarchy_a5_greatgrandchildren.png)
+:::
+::::
+
+## {background-image="figs/ct_h3_footprint_8.png" background-size="contain"}
+
+::: {.note}
+H3 · res 8<br>compacted: footprints
+:::
+
+## {background-image="figs/ct_s2_geo_14.png" background-size="contain"}
+
+::: {.note}
+S2 · level 14<br>compacted: footprints = cells
+:::
+
+## {background-image="figs/ct_a5_footprint_13.png" background-size="contain"}
+
+::: {.note}
+A5 · res 13<br>compacted: footprints
+:::
+
+## Co-compaction {.part}
+
+## Everything but one
+
+:::: {.columns}
+::: {.column width="40%"}
+- one H3 res 5 cell
+- take all res 8 great-grandchildren except one
+- how well does it compact?
+:::
+::: {.column width="60%"}
+![](figs/coco_ggc_cells.png)
+:::
+::::
+
+## Everything but one
+
+:::: {.columns}
+::: {.column width="40%"}
+- uncompacted: **342** cells
+- compacted: **18** cells
+- 19x savings, but...
+:::
+::: {.column width="60%"}
+![](figs/coco_ggc_compact.png)
+:::
+::::
+
+## Everything but one
+
+:::: {.columns}
+::: {.column width="40%"}
+- can describe this set with just 2 cells
+    - parent, minus missing child
+- can we generalize this idea to improve compaction?
+- "co-compaction"
+:::
+::: {.column width="60%"}
+![](figs/coco_ggc_bag.png)
+:::
+::::
+
+
+## Cellsets to bags
+
+- how to represent this idea?
+- avoid positive/negative cells
+- instead, a **bag**:
+    - multiset of cells at mixed resolutions
+    - cells logically represent descendants (at target resolution)
+    - cells cancel out if "seen" twice
+- boolean logic (`XOR`): cells flip everything beneath them
+
+## Example
+
+:::: {.columns .gallery}
+::: {.column width="33%"}
+![set: 43 cells](figs/coco_simple_set.png){width="75%"}
+:::
+::: {.column width="33%"}
+![compacted: 7 cells](figs/coco_simple_compact.png){width="75%"}
+:::
+::: {.column width="33%"}
+![bag: 3 cells](figs/coco_simple_all.png){width="75%"}
+:::
+::::
+
+:::: {.columns .gallery}
+::: {.column width="33%"}
+![1. add cell](figs/coco_simple_step1.png){width="75%"}
+:::
+::: {.column width="33%"}
+![2. take away child](figs/coco_simple_step2.png){width="75%"}
+:::
+::: {.column width="33%"}
+![3. add back grandchild](figs/coco_simple_step3.png){width="75%"}
+:::
+::::
+
+
+## {background-image="figs/coco_ct_h3_7_step1.png" background-size="contain"}
+
+::: {.note}
+Connecticut · H3 r = 7<br>step 1 · add 124
+:::
+
+## {background-image="figs/coco_ct_h3_7_step2.png" background-size="contain"}
+
+::: {.note}
+Connecticut · H3 r = 7<br>step 2 · take away 64
+:::
+
+## {background-image="figs/coco_ct_h3_7_step3.png" background-size="contain"}
+
+::: {.note}
+Connecticut · H3 r = 7<br>step 3 · add back 17
+:::
+
+## {background-image="figs/coco_ct_h3_7_step4.png" background-size="contain"}
+
+::: {.note}
+Connecticut · H3 r = 7<br>step 4 · take away 5
+:::
+
+## {background-image="figs/coco_ct_h3_7_all.png" background-size="contain"}
+
+::: {.note}
+Connecticut · H3 r = 7<br>bag: 210 cells (compacted: 318)
+:::
+
+## {background-image="figs/coco_ct_s2_12_step1.png" background-size="contain"}
+
+::: {.note}
+Connecticut · S2 r = 12<br>step 1 · add 87
+:::
+
+## {background-image="figs/coco_ct_s2_12_step2.png" background-size="contain"}
+
+::: {.note}
+Connecticut · S2 r = 12<br>step 2 · take away 106
+:::
+
+## {background-image="figs/coco_ct_s2_12_step3.png" background-size="contain"}
+
+::: {.note}
+Connecticut · S2 r = 12<br>step 3 · add back 17
+:::
+
+## {background-image="figs/coco_ct_s2_12_step4.png" background-size="contain"}
+
+::: {.note}
+Connecticut · S2 r = 12<br>step 4 · take away 1
+:::
+
+## {background-image="figs/coco_ct_s2_12_all.png" background-size="contain"}
+
+::: {.note}
+Connecticut · S2 r = 12<br>bag: 211 cells (compacted: 318)
+:::
+
+
+## Co-compact query
+
+:::: {.columns}
+::: {.column .code}
+```{.python check="bag_index"}
+# input: cellsets, name -> cells at res r
+
+bags = {
+    name: cocompact(cells)
+    for name, cells in cellsets.items()
+}
+index = reverse_index(bags)
+
+def containing(cell):
+    out = set()
+    for c in ancestors(cell):
+        out ^= index[c]
+    return out
+```
+:::
+::: {.column}
+- same reverse index, now built from the bags
+- walk ancestors and count hits
+    - **odd** is **in**
+    - **even** is **out**
+    - (using `XOR` here to be *slick*)
+- `r+1` lookups, no loop over the cellsets
+:::
+::::
+
+## Compacted vs. co-compacted query
+
+:::: {.columns}
+::: {.column width="50%"}
+compacted
+
+```python
+def containing(cell):
+    out = set()
+    for c in ancestors(cell):
+        out |= index[c]
+    return out
+```
+:::
+::: {.column width="50%"}
+co-compacted
+
+```python
+def containing(cell):
+    out = set()
+    for c in ancestors(cell):
+        out ^= index[c]
+    return out
+```
+:::
+::::
+
+- one character apart: **union** the hits, or `XOR` them
+- (actually, compacted case *also* works with `XOR`!)
+
+
+## Computing the smallest bag
+
+- walk **up** the tree
+- at each cell: compute smallest bag for its subtree, **two ways**
+    - **positive**: cells to include
+    - **negative**: cells to exclude
+- at parent: combine children's *positives*, **or** parent union with *negatives*
+- keep the smaller
+- one pass: optimal
+- dynamic programming on trees
+
+## Benchmark: US states
+
+- (co-)compact each state separately
+- sum the cell counts
+
+
+::: {.split-after-3 .boxed}
+| system | res | cells | compact | co-compact | co-compact gain |
+|:---|---:|---:|---:|---:|---:|
+| H3 | 7 | 1.79M | **4.80%** | **2.85%** | **1.69x** |
+| S2 | 12 | 2.03M | **3.38%** | **2.29%** | **1.48x** |
+| A5 | 11 | 1.15M | **5.20%** | **3.21%** | **1.62x** |
+:::
+
+
+## Questions?
+
+- Part 1: **given** a set, efficiently store and query it
+- Part 2: **design** a set to meet an objective, balanced against its (co-)compaction size
+
+## Part 2 {.part}
+
+DGGS Set Design: Compaction-Aware Optimization
+
+## Motivation: Isochrones
+
+:::: {.columns}
+::: {.column width="40%"}
+- given a restaurant, **design** a delivery zone
+- maybe: "all cells within 20 minutes driving time" (isochrone)
+- requires a **universe** of cells we might pick, with times
+- note: **unreachable** (water, parks) different from **outside the universe**
+
+:::
+::: {.column width="60%"}
+![](figs/design_field.png)
+:::
+::::
+
+## Motivation: Isochrones
+
+:::: {.columns}
+::: {.column width="40%"}
+- Brooklyn: **8,825** H3 res-10 cells
+- many restaurants, storage adds up
+- compact: **3,491** cells
+    - 2.5x smaller
+- co-compact: **2,037** cells
+    - 4.3x smaller
+:::
+::: {.column width="60%"}
+![](figs/design_exact.png)
+:::
+::::
+
+
+## A closer look
+
+:::: {.columns}
+::: {.column width="40%"}
+- compaction is **stuck** near the edge: groups that are *almost* full
+- three kinds of spot
+:::
+::: {.column width="60%"}
+![](figs/design_closer.png)
+:::
+::::
+
+## 1. Just over the limit
+
+:::: {.columns}
+::: {.column width="40%"}
+- 48 of 49 cells in; the last one is at **20.3** minutes
+- add it, and 12 compacted cells become **one**
+:::
+::: {.column width="60%"}
+![](figs/design_closer_1.png)
+:::
+::::
+
+## 2. Shoreline
+
+:::: {.columns}
+::: {.column width="40%"}
+- water cells are **free**: no orders come from there
+- use them to compact the cells on the shore
+- not every application wants water in; this one loses nothing
+:::
+::: {.column width="60%"}
+![](figs/design_closer_2.png)
+:::
+::::
+
+## 3. Many small cells, barely in
+
+:::: {.columns}
+::: {.column width="40%"}
+- 8 uncompactable cells at **19.6–20.0** minutes
+- drop them all:
+    - 8 cells saved
+    - 1.6 minutes of slack given up
+- worth it?
+:::
+::: {.column width="60%"}
+![](figs/design_closer_3.png)
+:::
+::::
+
+## Trade-offs
+
+- select set $S$ from universe $U$, balancing competing objectives:
+    - **fidelity** $F(S)$: $v(c)$ summed over the cells in $S$
+    - **size** of set, $\|S\|$: raw cells, compacted, or co-compacted
+- find set that maximizes **fidelity − λ · size**
+    - $\lambda$ a trade-off parameter
+
+## Set design as optimization
+
+$$
+\underset{S \subseteq U}{\text{maximize}} \quad \sum_{c \in S} v(c) \;-\; \lambda \, \|S\|
+$$
+
+- any $v$ works: linear, quadratic, $\pm\infty$ to force cells, profit, ...
+- $\lambda = 0$: take every cell with $v(c) > 0$
+- larger $\lambda$ gives up fidelity for size
+
+## Solving
+
+- $\|S\|$ can be the raw, compacted, or co-compacted size of $S$
+- on its face, maybe a hard discrete optimization problem?
+- but like co-compaction, solvable with **dynamic programming** over the cell hierarchy tree
+    - e.g., walk up tree, comparing value of whole parent cells to just the cells selected by their children
+
+## Examples
+
+- $I$: 20-minute driving isochrone from Brooklyn
+- H3 at res 10 and S2 at level 16
+- $v(c) = 20 - \text{minutes}$; unreachable (water, parks) is 0
+- $S_\lambda$: the optimal set at $\lambda$
+- $F(S_0) = F(I)$: they differ only by free cells, $v(c) = 0$
+- **% fidelity** of $S_\lambda$: $F(S_\lambda) \,/\, F(S_0)$
+
+## {background-image="figs/design_iso.png" background-size="contain"}
+
+::: {.note}
+H3 · res 10<br>the isochrone, compacted
+:::
+
+## {background-image="figs/design_0.png" background-size="contain"}
+
+::: {.note}
+λ = 0.001
+:::
+
+## {background-image="figs/design_1.png" background-size="contain"}
+
+::: {.note}
+λ = 0.05
+:::
+
+## {background-image="figs/design_2.png" background-size="contain"}
+
+::: {.note}
+λ = 0.1
+:::
+
+## {background-image="figs/design_3.png" background-size="contain"}
+
+::: {.note}
+λ = 0.2
+:::
+
+## {background-image="figs/design_4.png" background-size="contain"}
+
+::: {.note}
+λ = 0.3
+:::
+
+## {background-image="figs/design_5.png" background-size="contain"}
+
+::: {.note}
+λ = 0.5
+:::
+
+## {background-image="figs/design_6.png" background-size="contain"}
+
+::: {.note}
+λ = 1
+:::
+
+## {background-image="figs/design_7.png" background-size="contain"}
+
+::: {.note}
+λ = 2
+:::
+
+## {background-image="figs/design_8.png" background-size="contain"}
+
+::: {.note}
+λ = 3
+:::
+
+## {background-image="figs/design_9.png" background-size="contain"}
+
+::: {.note}
+λ = 5
+:::
+
+## {background-image="figs/design_10.png" background-size="contain"}
+
+::: {.note}
+λ = 10
+:::
+
+## {background-image="figs/design_11.png" background-size="contain"}
+
+::: {.note}
+λ = 20
+:::
+
+## {background-image="figs/design_12.png" background-size="contain"}
+
+::: {.note}
+λ = 50
+:::
+
+## {background-image="figs/design_13.png" background-size="contain"}
+
+::: {.note}
+λ = 100
+:::
+
+## {background-image="figs/design_14.png" background-size="contain"}
+
+::: {.note}
+λ = 200
+:::
+
+## {background-image="figs/design_16.png" background-size="contain"}
+
+::: {.note}
+λ = 1000
+:::
+
+## {background-image="figs/design_17.png" background-size="contain"}
+
+::: {.note}
+λ = 2000
+:::
+
+## {background-image="figs/design_s2_iso.png" background-size="contain"}
+
+::: {.note}
+S2 · level 16<br>the isochrone, compacted
+:::
+
+## {background-image="figs/design_s2_0.png" background-size="contain"}
+
+::: {.note}
+S2 · λ = 0.001
+:::
+
+## {background-image="figs/design_s2_1.png" background-size="contain"}
+
+::: {.note}
+S2 · λ = 0.05
+:::
+
+## {background-image="figs/design_s2_2.png" background-size="contain"}
+
+::: {.note}
+S2 · λ = 0.1
+:::
+
+## {background-image="figs/design_s2_3.png" background-size="contain"}
+
+::: {.note}
+S2 · λ = 0.2
+:::
+
+## {background-image="figs/design_s2_4.png" background-size="contain"}
+
+::: {.note}
+S2 · λ = 0.3
+:::
+
+## {background-image="figs/design_s2_5.png" background-size="contain"}
+
+::: {.note}
+S2 · λ = 0.5
+:::
+
+## {background-image="figs/design_s2_6.png" background-size="contain"}
+
+::: {.note}
+S2 · λ = 1
+:::
+
+## {background-image="figs/design_s2_7.png" background-size="contain"}
+
+::: {.note}
+S2 · λ = 2
+:::
+
+## {background-image="figs/design_s2_8.png" background-size="contain"}
+
+::: {.note}
+S2 · λ = 3
+:::
+
+## {background-image="figs/design_s2_9.png" background-size="contain"}
+
+::: {.note}
+S2 · λ = 5
+:::
+
+## {background-image="figs/design_s2_10.png" background-size="contain"}
+
+::: {.note}
+S2 · λ = 10
+:::
+
+## {background-image="figs/design_s2_11.png" background-size="contain"}
+
+::: {.note}
+S2 · λ = 20
+:::
+
+## {background-image="figs/design_s2_12.png" background-size="contain"}
+
+::: {.note}
+S2 · λ = 50
+:::
+
+## {background-image="figs/design_s2_13.png" background-size="contain"}
+
+::: {.note}
+S2 · λ = 100
+:::
+
+## {background-image="figs/design_s2_14.png" background-size="contain"}
+
+::: {.note}
+S2 · λ = 200
+:::
+
+## {background-image="figs/design_s2_16.png" background-size="contain"}
+
+::: {.note}
+S2 · λ = 1000
+:::
+
+## {background-image="figs/design_s2_17.png" background-size="contain"}
+
+::: {.note}
+S2 · λ = 2000
+:::
+
+## H3 fidelity vs size
+
+![](figs/design_frontier.png){.r-stretch}
+
+## Optimization gains
+
+::: {.split-after-1 .boxed}
+| % fidelity | compacted | co-compacted | gain |
+|:---|---:|---:|---:|
+| isochrone (100%) | 3,491 | 2,037 | — |
+| 100% (using free cells) | 1,780 | 1,058 | **1.9x** |
+| ≥ 99.7% | 831 | 575 | **3.5x** |
+| ≥ 99% | 420 | 288 | **7.1x** |
+| ≥ 98% | 227 | 126 | **16x** |
+:::
+
+## {.interlude .center}
+
+Thank you! Questions?
+

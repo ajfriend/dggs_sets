@@ -1,0 +1,27 @@
+[project]
+name = "dggs-sets"
+version = "0.1.0"
+description = "Compaction and XOR co-compaction for H3, S2 and A5"
+readme = "README.md"
+authors = [
+    { name = "AJ Friend", email = "ajfriend@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "h3>=4.5.0",
+    "matplotlib>=3.11.2",
+    "pya5==1.0.0",
+    "s2geometry>=0.14.0",
+    "shapely>=2.2.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.1,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "contextily>=1.7.1",
+    "pytest>=9.1.1",
+    "tabulate>=0.10.0",
+]
