@@ -1,4 +1,4 @@
-'''Compaction and XOR co-compaction, over a cell tree.
+'''Compaction and co-compaction, over a cell tree.
 
 A "bag" is a plain set of cells, possibly at mixed resolutions and possibly
 nested. A fine cell is in the set a bag describes iff an odd number of its

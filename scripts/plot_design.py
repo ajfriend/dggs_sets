@@ -106,14 +106,14 @@ def kept(case, desc, weights, iso):
     return 100 * sum(weights[c] for c in zone) / sum(weights[c] for c in iso)
 
 
-def sweep(case, weights, iso, tree):
+def sweep(case, weights, iso):
     '''Per size: (description size, % fidelity) at each lam. 'post' is the
     compaction-aware zone co-compacted afterwards: the same fidelity as
     'compact', at co-compaction's size, but chosen without knowing about it.'''
     m = case.m
     curves = {size: [] for size in [*SIZES, 'post']}
     for lam in SWEEP:
-        descs = {size: m.design(weights, lam, size, tree=tree) for size in SIZES}
+        descs = {size: m.design(weights, lam, size) for size in SIZES}
         for size, d in descs.items():
             curves[size].append((len(d), kept(case, d, weights, iso)))
         post = m.cocompact(m.uncompact(descs['compact'], case.r))
@@ -136,7 +136,7 @@ def field_layer(case, minutes):
     return polys, colors
 
 
-def movie(case, view, tiles, weights, minutes, iso, exact, tree):
+def movie(case, view, tiles, weights, minutes, iso, exact):
     '''One figure per frame: minutes - T for every
     cell over a basemap, the compacted cells in black, the zone's edge in green.
     {prefix}_field.png is the field alone, {prefix}_exact.png the
@@ -147,7 +147,7 @@ def movie(case, view, tiles, weights, minutes, iso, exact, tree):
     xlim, ylim, aspect, figsize = view
     img, extent = tiles
     frames = [('field', None), ('exact', exact), ('iso', exact)]
-    frames += [(k, {size: m.design(weights, lam, size, tree=tree) for size in ('compact', 'cocompact')})
+    frames += [(k, {size: m.design(weights, lam, size) for size in ('compact', 'cocompact')})
                for k, lam in enumerate(LAMS)]
     polys, colors = field_layer(case, minutes)
 
@@ -366,11 +366,10 @@ def run(case, view, tiles):
     exact = {'cells': iso, 'compact': m.compact(iso), 'cocompact': m.cocompact(iso)}
     print(f'\n{case.name} r = {case.r}: {len(minutes):,} cells in the universe; '
           f'I_{T:g}: {len(iso):,} cells, {len(exact["compact"]):,} compacted, {len(exact["cocompact"]):,} tokens')
-    tree = m.cell_tree(weights)   # depends only on the cells: build it once for every lam
     if case.name == 'h3':
         closer(case, view, tiles, minutes, iso, exact)
-    movie(case, view, tiles, weights, minutes, iso, exact, tree)
-    curves = sweep(case, weights, iso, tree)
+    movie(case, view, tiles, weights, minutes, iso, exact)
+    curves = sweep(case, weights, iso)
     frontier(case, curves, exact)
     budgets(curves, exact)
 

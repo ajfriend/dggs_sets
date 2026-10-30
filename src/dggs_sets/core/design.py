@@ -6,8 +6,7 @@ chooses the set S of cells maximizing  sum(weights[c] for c in S) - lam * size(S
 and returns its description. Cells missing from `weights` are never chosen.
 It is the same walk up `tree = cell_tree(grid, weights)` as `compact` and
 `cocompact`, with each answer a (value, description) pair instead of just a
-description. The tree depends only on the cells, not on lam, so a sweep
-builds it once.
+description.
 '''
 from math import inf
 

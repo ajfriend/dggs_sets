@@ -1,7 +1,7 @@
 [project]
 name = "dggs-sets"
 version = "0.1.0"
-description = "Compaction and XOR co-compaction for H3, S2 and A5"
+description = "Compaction, co-compaction and set design for H3, S2 and A5"
 readme = "README.md"
 authors = [
     { name = "AJ Friend", email = "ajfriend@gmail.com" }

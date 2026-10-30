@@ -1,4 +1,4 @@
-'''Compaction, XOR co-compaction and set design across DGGSs: H3, S2 and A5.
+'''Compaction, co-compaction and set design across DGGSs: H3, S2 and A5.
 
 The package has four parts:
 
@@ -17,12 +17,14 @@ Each system module exposes the same interface:
     latlng_to_cell(lat, lng, res) -> int
     cell_to_latlng(cell) -> (lat, lng)          # the cell's center
     cell_to_parent(cell, res) -> int            # by ID; the cell itself at its own res
-    design(weights, lam, size, tree=None) -> set[int]   # max sum(w) - lam*size; size: cells/compact/cocompact
-    cell_tree(cells) -> [(parent, children)]    # the tree above cells, finest first; reuse across lams
+    design(weights, lam, size) -> set[int]      # max sum(w) - lam*size; size: cells/compact/cocompact
     cell_to_boundary(cell) -> shapely Polygon   # the geometric cell, G(c)
     footprint(cell, res) -> shapely geometry    # union of descendants' polygons, F_r(c)
     avg_cell_area_km2(res) -> float
     MAX_RES: int
+
+The system modules bind the core algorithms to their grid: `compact`,
+`cocompact` and `design` build the tree above the cells and walk it.
 '''
 from . import a5, h3, s2
 

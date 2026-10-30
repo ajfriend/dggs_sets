@@ -1,6 +1,6 @@
 # dggs_sets
 
-The tutorial package for the FOSS4G talk *DGGS (Co-)Compaction and Set Design*: compaction, **XOR co-compaction** and set design across three DGGSs, H3, S2 and A5, behind one interface. It's for learning from, not for production, and it isn't on PyPI: `uv add git+https://github.com/ajfriend/dggs_sets`, or clone it.
+The tutorial package for the FOSS4G talk *DGGS (Co-)Compaction and Set Design*: compaction, **co-compaction** and set design across three DGGSs, H3, S2 and A5, behind one interface. It's for learning from, not for production, and it isn't on PyPI: `uv add git+https://github.com/ajfriend/dggs_sets`, or clone it.
 
 ```python
 from dggs_sets import h3, s2, a5, data   # same interface in each system
@@ -19,7 +19,6 @@ Each submodule provides these functions:
 - `uncompact(bag, res)` is the parity decoder. It works on the output of both `compact` and `cocompact`.
 - `contains(bag, cell)` is a membership test: it counts how many of the cell's ancestors are in the bag and checks whether that number is odd.
 - `design(weights, lam, size)` chooses the set S maximizing Σ weights[c] − lam · size(S), where `size` is `'cells'`, `'compact'` or `'cocompact'`. It returns S's description: the cells, the compacted cells, or the bag. Cells missing from `weights` are never chosen. Like `cocompact`, it takes one exact pass up the tree.
-- `cell_tree(cells)` returns the tree above `cells`: a list of (parent, children) pairs, finest first. `compact`, `cocompact` and `design` build it for you, or take it as `tree=` to reuse one, say across a λ sweep.
 - `latlng_to_cell(lat, lng, res)` returns the cell containing a point, and `cell_to_latlng(cell)` returns a cell's center.
 - `cell_to_parent(cell, res)` returns the cell's ancestor at `res`, found by ID (the cell itself at its own resolution).
 - `cell_to_boundary(cell)` returns the cell's own polygon, G(c), as a shapely `Polygon` in lng/lat.
@@ -33,16 +32,15 @@ from dggs_sets import h3
 
 # weights: cell -> value of including it, here 20 - drive minutes (0 if unreachable)
 bag = h3.design(weights, lam=1.0, size='cocompact')   # or 'compact', 'cells'
-tree = h3.cell_tree(weights)                          # for a sweep: build once...
-bags = [h3.design(weights, lam, tree=tree) for lam in (0.1, 1, 10)]   # ...reuse per lam
+bags = [h3.design(weights, lam) for lam in (0.1, 1, 10)]   # a sweep
 zone = h3.uncompact(bag, 10)                          # the chosen cells
 ```
 
 ## Layout
 
-The algorithms are plain Python, and they're built on one primitive. `cell_tree(grid, cells)` returns the tree above the cells as a list of (parent, children) pairs, finest first, so children always come before their parent. A `Grid` is just three functions: `parent`, `children` and `resolution`.
+The algorithms are plain Python, and they're built on one internal primitive. `core.tree.cell_tree(grid, cells)` returns the tree above the cells as a list of (parent, children) pairs, finest first, so children always come before their parent. A `Grid` is just three functions: `parent`, `children` and `resolution`.
 
-Every algorithm that walks up the tree takes that tree and is a single loop, `for p, kids in tree:`, that combines the children's answers:
+Every algorithm that walks up the tree takes that tree (the system modules build it for you) and is a single loop, `for p, kids in tree:`, that combines the children's answers:
 
 - `compact(tree, cells)`: are all the children full?
 - `cocompact(tree, cells)`: which is the cheaper bag, as is or flipped?

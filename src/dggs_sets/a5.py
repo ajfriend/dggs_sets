@@ -51,7 +51,6 @@ uncompact = bind(compaction.uncompact, grid)
 contains = bind(compaction.contains, grid)
 design = bind_tree(_design, grid)
 cell_to_parent = bind(_tree.cell_to_parent, grid)
-cell_tree = bind(_tree.cell_tree, grid)
 footprint = bind(_adapter.footprint, grid, cell_to_boundary)
 
 

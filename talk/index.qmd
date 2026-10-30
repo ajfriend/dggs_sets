@@ -640,6 +640,10 @@ def containing(cell):
 - one pass: optimal
 - dynamic programming on trees
 
+::: {.note}
+code: `dggs_sets.h3.cocompact`
+:::
+
 ## Benchmark: US states
 
 - (co-)compact each state separately
@@ -773,6 +777,10 @@ $$
 - on its face, maybe a hard discrete optimization problem?
 - but like co-compaction, solvable with **dynamic programming** over the cell hierarchy tree
     - e.g., walk up tree, comparing value of whole parent cells to just the cells selected by their children
+
+::: {.note}
+code: `dggs_sets.h3.design`
+:::
 
 ## Examples
 

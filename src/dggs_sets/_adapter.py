@@ -15,13 +15,11 @@ def bind(f, *args):
 
 
 def bind_tree(f, grid):
-    '''`f(tree, cells, ...)` as `f(cells, ..., tree=None)`: builds the tree above `cells`
-    unless one is passed in (to reuse it, say across a sweep over lam).'''
-    def g(cells, *args, tree=None, **kw):
-        return f(cell_tree(grid, cells) if tree is None else tree, cells, *args, **kw)
-    sig = inspect.signature(f)   # f's own arguments, minus the tree, plus tree=None
-    g.__signature__ = sig.replace(parameters=[*list(sig.parameters.values())[1:],
-                                              inspect.Parameter('tree', inspect.Parameter.KEYWORD_ONLY, default=None)])
+    '''`f(tree, cells, ...)` as `f(cells, ...)`: builds the tree above `cells`, then walks it.'''
+    def g(cells, *args, **kw):
+        return f(cell_tree(grid, cells), cells, *args, **kw)
+    sig = inspect.signature(f)   # f's own arguments, minus the tree
+    g.__signature__ = sig.replace(parameters=list(sig.parameters.values())[1:])
     return _named(g, f)
 
 
