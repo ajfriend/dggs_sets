@@ -227,7 +227,7 @@ Every slide is a `##` heading followed by markdown. There are five layouts:
 | title + code beside bullets | `## Title`, then `:::: {.columns}` holding a `::: {.column .code}` (sized to the code) and a `::: {.column}` (takes the rest) |
 | title + image | `## Title`, then `![](figs/x.png){.r-stretch}` to fill the rest of the slide |
 | image only | `## {background-image="figs/x.png" background-size="contain"}`, optionally with `::: {.note}` for text in the bottom-right corner |
-| interlude | `## {.interlude .center}`, then one line of text: big and centered |
+| interlude | `## {.interlude}`, then one line of text: big and centered |
 
 The deck has no speaker notes. Press <kbd>s</kbd> for the speaker view, which has a timer. A placeholder, if one is needed, reads `[TODO: ...]{.todo}` and shows in red italics. Part title slides use a level-2 heading with the `.part` class. A level-1 `#` heading would make reveal.js stack that part's slides vertically, and the right arrow would skip them.
 

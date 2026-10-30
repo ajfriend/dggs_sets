@@ -266,7 +266,7 @@ H3 · res 8<br>uncompacted: 17k cells
 H3 · res 8<br>compacted: 2.7k cells<br>6x savings!
 :::
 
-## {.interlude .center}
+## {.interlude}
 
 Awesome, but... what's going on with those gaps/overlaps?
 
@@ -343,7 +343,7 @@ def containing(cell):
 :::
 ::::
 
-## {.interlude .center}
+## {.interlude}
 
 What about S2 and A5?
 
@@ -1023,7 +1023,11 @@ S2 · λ = 2000
 | ≥ 98% | 227 | 126 | **16x** |
 :::
 
-## {.interlude .center}
+## {.interlude}
 
 Thank you! Questions?
+
+::: {.note}
+slides CC BY 4.0 · map tiles © Esri · drive times © OpenStreetMap contributors (ODbL)
+:::
 

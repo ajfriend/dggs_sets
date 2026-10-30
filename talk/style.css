@@ -135,15 +135,29 @@
   color: #333;
 }
 
-/* Interlude slides ("## {.interlude .center}"): one line of big text, centered.
-   reveal's own .center class does the vertical centering. */
-.reveal section.interlude {
+/* Interlude slides ("## {.interlude}"): one line of big text, centered. The
+   section keeps the slide's full height and centers with flexbox (reveal's own
+   .center shrinks the section to its text, which leaves a corner note nowhere
+   to sit). */
+.reveal .slides section.interlude.present {
+  display: flex !important;   /* reveal sets display inline on the present section */
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
   text-align: center;
 }
 .reveal section.interlude p {
   font-size: 1.6em;
   line-height: 1.3;
   margin: 0 1em;
+}
+.reveal section.interlude .note {   /* a corner note stays a corner note */
+  font-weight: 400;
+  color: #666;
+}
+.reveal section.interlude .note p {
+  font-size: 1em;
+  margin: 0;
 }
 
 /* A gallery of small captioned images (":::: {.columns .gallery}"): captions
