@@ -144,15 +144,21 @@ def movie(case, view, tiles, weights, minutes, iso, exact):
     {prefix}_iso.png the isochrone labeled like the movie (its lead-in), then
     one per penalty.'''
     m, r = case.m, case.r
-    xlim, ylim, aspect, figsize = view
-    img, extent = tiles
     frames = [('field', None), ('exact', exact), ('iso', exact)]
     frames += [(k, {size: m.design(weights, lam, size) for size in ('compact', 'cocompact')})
                for k, lam in enumerate(LAMS)]
     polys, colors = field_layer(case, minutes)
+    # the field and the exact isochrone show the whole universe, with the scale; the movie
+    # zooms to its largest zone (the first penalty's) and drops the scale, introduced by then
+    widest = region(m, m.uncompact(frames[3][1]['compact'], r))
+    zoomed = frame([widest], pad=0.04)
+    zoomed_tiles = basemap(*zoomed[:2], zoom=ZOOM + 1)
 
     def draw(tag, descs):
         '''The frame as a figure, with its zone and % fidelity (None for the field).'''
+        overview = descs is None or tag == 'exact'
+        xlim, ylim, aspect, figsize = view if overview else zoomed
+        img, extent = tiles if overview else zoomed_tiles
         fig = plt.figure(figsize=figsize)
         ax = fig.add_axes((0, 0, 1, 1))
         ax.imshow(img, extent=extent, interpolation='bilinear', zorder=0)
@@ -164,7 +170,7 @@ def movie(case, view, tiles, weights, minutes, iso, exact):
                 outline(ax, footprint(m, t, r), color='#111', lw=0.5, solid_joinstyle='round')
             outline(ax, region(m, m.uncompact(zone, r)), color=NEON, lw=2.5, solid_joinstyle='round')
         # the field and the exact isochrone share a label: the slides introduce them as one map
-        label = FIELD_LABEL if descs is None or tag == 'exact' else f'{len(zone):,} cells · {err:.1f}% fidelity'
+        label = FIELD_LABEL if overview else f'{len(zone):,} cells · {err:.1f}% fidelity'
         ax.plot(ORIGIN[1], ORIGIN[0], 'o', ms=8, mfc='#111', mec='white', mew=2)
         ax.set_xlim(*xlim)
         ax.set_ylim(*ylim)
@@ -173,16 +179,20 @@ def movie(case, view, tiles, weights, minutes, iso, exact):
         ax.text(0.015, 0.985, label, transform=ax.transAxes,
                 ha='left', va='top', fontsize=22, fontweight='bold', color='#222',
                 bbox=dict(boxstyle='round,pad=0.3', fc='white', ec='none', alpha=0.85))
-        colorbar(fig, ax)
+        if overview:
+            colorbar(fig, ax)
         credit(ax)
         return fig, zone, err
 
-    # one palette for every frame, from the one with every color in it: basemap, ramp, outlines, the green edge
-    fig, _, _ = draw('exact', exact)
-    palette = shared_palette(fig, dpi=150)
-    plt.close(fig)
+    # one palette per view, from a frame with every color in it: basemap, ramp, outlines, the green edge
+    palettes = {}
+    for tag in ('exact', 'iso'):
+        fig, _, _ = draw(tag, exact)
+        palettes[tag] = shared_palette(fig, dpi=150)
+        plt.close(fig)
     for tag, descs in frames:
         fig, zone, err = draw(tag, descs)
+        palette = palettes['exact' if descs is None or tag == 'exact' else 'iso']
         save(fig, OUT / f'{case.prefix}_{tag}.png', dpi=150, palette=palette)
         plt.close(fig)
         if descs is not None:
@@ -197,7 +207,8 @@ CREDIT = f"{TILES['attribution']} · drive times from OpenStreetMap data © Open
 
 def credit(ax):
     '''The tile provider's and the data's credit, in the lower-left corner of the map.'''
-    ax.text(0.005, 0.005, CREDIT, transform=ax.transAxes, ha='left', va='bottom', fontsize=8, color='#666')
+    ax.text(0.005, 0.005, CREDIT, transform=ax.transAxes, ha='left', va='bottom', fontsize=8, color='#555',
+            bbox=dict(boxstyle='square,pad=0.3', fc='white', ec='none', alpha=0.8))
 
 
 def big_unreachable(minutes, least=400):
