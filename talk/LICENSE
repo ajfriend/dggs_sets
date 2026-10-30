@@ -5,6 +5,10 @@ International License (CC BY 4.0): https://creativecommons.org/licenses/by/4.0/
 You may share and adapt them for any purpose, with attribution.
 
 Exceptions:
-- Figures that include basemap tiles carry the tile provider's credit and
-  remain subject to its terms.
+- The NYC isochrone figures (figs/design_*.png) are produced from drive
+  times derived from OpenStreetMap data, © OpenStreetMap contributors,
+  under the ODbL (https://www.openstreetmap.org/copyright); each carries
+  that notice. The maps among them also include basemap tiles,
+  Tiles (C) Esri -- Esri, DeLorme, NAVTEQ, which remain subject to Esri's
+  terms and are not covered by the CC BY license.
 - The code in the slides is covered by the repository's MIT license (../LICENSE).

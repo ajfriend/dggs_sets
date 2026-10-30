@@ -267,5 +267,5 @@ uv run pytest    # about 10 s
 ## License
 
 - Code: [MIT](LICENSE).
-- Slides, text and figures (`talk/`): [CC BY 4.0](talk/LICENSE).
-- Data: the US states are from the Census Bureau (public domain). The NYC drive-time fields were computed from OpenStreetMap data and are © OpenStreetMap contributors, under the [ODbL](https://opendatacommons.org/licenses/odbl/). See [AGENTS.md](AGENTS.md) for the reasoning.
+- Slides, text and figures (`talk/`): [CC BY 4.0](talk/LICENSE), except that the isochrone maps include Esri basemap tiles under Esri's terms, and the isochrone figures carry the OpenStreetMap notice below.
+- Data: the US states are from the Census Bureau (public domain); Connecticut's counties are from CT DEEP (CC0). The NYC drive-time fields were computed from OpenStreetMap data and are © OpenStreetMap contributors, under the [ODbL](https://opendatacommons.org/licenses/odbl/). See [AGENTS.md](AGENTS.md) for the reasoning.

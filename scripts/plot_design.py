@@ -192,10 +192,12 @@ def movie(case, view, tiles, weights, minutes, iso, exact):
                   f'co-compacted {len(coco):,} tokens, {kept(case, coco, weights, iso):.2f}%')
 
 
+CREDIT = f"{TILES['attribution']} · drive times from OpenStreetMap data © OpenStreetMap contributors (ODbL)"
+
+
 def credit(ax):
-    '''The tile provider's credit, in the lower-left corner of the map.'''
-    ax.text(0.005, 0.005, TILES['attribution'], transform=ax.transAxes,
-            ha='left', va='bottom', fontsize=8, color='#666')
+    '''The tile provider's and the data's credit, in the lower-left corner of the map.'''
+    ax.text(0.005, 0.005, CREDIT, transform=ax.transAxes, ha='left', va='bottom', fontsize=8, color='#666')
 
 
 def big_unreachable(minutes, least=400):
@@ -341,6 +343,8 @@ def frontier(case, curves, exact):
     for side in ('top', 'right'):
         ax.spines[side].set_visible(False)
     ax.legend(frameon=False, fontsize=13, loc='lower right')
+    fig.text(0.99, 0.01, 'drive times © OpenStreetMap contributors (ODbL)',
+             ha='right', va='bottom', fontsize=8, color='#666')
     ax.tick_params(labelsize=11)
     path = OUT / f'{case.prefix}_frontier.png'
     save(fig, path, dpi=150, bbox_inches='tight')
