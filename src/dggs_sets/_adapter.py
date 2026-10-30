@@ -1,10 +1,9 @@
 '''Shared pieces of the per-DGGS modules.'''
-import inspect
 from functools import partial
 
 import shapely
 
-from .core.tree import cell_tree, descendants
+from .core.tree import descendants
 
 EARTH_AREA_KM2 = 510_065_621.7
 
@@ -12,15 +11,6 @@ EARTH_AREA_KM2 = 510_065_621.7
 def bind(f, *args):
     '''`f` with its leading arguments (the grid, ...) filled in, keeping its name and docstring.'''
     return _named(partial(f, *args), f)
-
-
-def bind_tree(f, grid):
-    '''`f(tree, cells, ...)` as `f(cells, ...)`: builds the tree above `cells`, then walks it.'''
-    def g(cells, *args, **kw):
-        return f(cell_tree(grid, cells), cells, *args, **kw)
-    sig = inspect.signature(f)   # f's own arguments, minus the tree
-    g.__signature__ = sig.replace(parameters=list(sig.parameters.values())[1:])
-    return _named(g, f)
 
 
 def _named(g, f):

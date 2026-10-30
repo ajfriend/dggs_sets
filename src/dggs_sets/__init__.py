@@ -23,8 +23,7 @@ Each system module exposes the same interface:
     avg_cell_area_km2(res) -> float
     MAX_RES: int
 
-The system modules bind the core algorithms to their grid: `compact`,
-`cocompact` and `design` build the tree above the cells and walk it.
+The system modules bind the core algorithms to their grid.
 '''
 from . import a5, h3, s2
 

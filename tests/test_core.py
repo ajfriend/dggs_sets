@@ -6,7 +6,7 @@ from h3.api import basic_int as h3
 
 from dggs_sets import h3 as xh3
 from dggs_sets.core.compaction import cocompact, compact, contains, uncompact
-from dggs_sets.core.tree import Grid, cell_tree, descendants
+from dggs_sets.core.tree import Grid, descendants
 
 # Toy quadtree: four roots 0b100..0b111; each level appends two bits.
 TOY = Grid(
@@ -15,11 +15,6 @@ TOY = Grid(
     resolution=lambda c: (c.bit_length() - 3) // 2,
 )
 ROOTS = [4, 5, 6, 7]
-
-
-def toy(f, cells, *args):
-    '''Run a tree algorithm on the toy grid: build the tree above `cells`, then walk it.'''
-    return f(cell_tree(TOY, cells), cells, *args)
 
 
 def kids(c):
@@ -32,15 +27,15 @@ def leaves(c, res):
 
 def test_full_siblings_collapse():
     S = set(kids(4))
-    assert toy(compact, S) == {4}
-    assert toy(cocompact, S) == {4}
+    assert compact(TOY, S) == {4}
+    assert cocompact(TOY, S) == {4}
 
 
 def test_three_of_four():
     a, b, c, d = kids(4)
     S = {a, b, c}
-    assert toy(compact, S) == S
-    assert toy(cocompact, S) == {4, d}
+    assert compact(TOY, S) == S
+    assert cocompact(TOY, S) == {4, d}
 
 
 def test_nested_three_levels():
@@ -48,14 +43,14 @@ def test_nested_three_levels():
     child = kids(4)[0]
     grandchild = kids(child)[0]
     S = (leaves(4, 2) - leaves(child, 2)) | {grandchild}
-    bag = toy(cocompact, S)
+    bag = cocompact(TOY, S)
     assert bag == {4, child, grandchild}
     assert uncompact(TOY, bag, 2) == S
 
 
 def test_empty():
-    assert toy(compact, set()) == set()
-    assert toy(cocompact, set()) == set()
+    assert compact(TOY, set()) == set()
+    assert cocompact(TOY, set()) == set()
 
 
 def _random_sets(n, res, seed=0):
@@ -68,7 +63,7 @@ def _random_sets(n, res, seed=0):
 
 def test_random_roundtrip_and_contains():
     for S in _random_sets(50, res=4):
-        c, cc = toy(compact, S), toy(cocompact, S)
+        c, cc = compact(TOY, S), cocompact(TOY, S)
         assert uncompact(TOY, c, 4) == S
         assert uncompact(TOY, cc, 4) == S
         assert len(cc) <= len(c)
@@ -83,7 +78,7 @@ def test_minimal_by_brute_force():
     rng = random.Random(1)
     for _ in range(40):
         S = {c for c in leaves(4, 2) if rng.random() < rng.random()}
-        bag = toy(cocompact, S)
+        bag = cocompact(TOY, S)
         for k in range(len(bag)):
             for combo in combinations(candidates, k):
                 assert uncompact(TOY, combo, 2) != S, (S, bag, combo)

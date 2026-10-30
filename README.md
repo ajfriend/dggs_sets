@@ -40,20 +40,20 @@ zone = h3.uncompact(bag, 10)                          # the chosen cells
 
 The algorithms are plain Python, and they're built on one internal primitive. `core.tree.cell_tree(grid, cells)` returns the tree above the cells as a list of (parent, children) pairs, finest first, so children always come before their parent. A `Grid` is just three functions: `parent`, `children` and `resolution`.
 
-Every algorithm that walks up the tree takes that tree (the system modules build it for you) and is a single loop, `for p, kids in tree:`, that combines the children's answers:
+Every algorithm that walks up the tree is a single loop, `for p, kids in cell_tree(grid, cells):`, that combines the children's answers:
 
-- `compact(tree, cells)`: are all the children full?
-- `cocompact(tree, cells)`: which is the cheaper bag, as is or flipped?
-- `design(tree, weights, lam, size)`: which has the better value? This is the same structure, with weights.
+- `compact(grid, cells)`: are all the children full?
+- `cocompact(grid, cells)`: which is the cheaper bag, as is or flipped?
+- `design(grid, weights, lam, size)`: which has the better value? This is the same structure, with weights.
 
-The per-DGGS modules (`h3.compact(cells)` and so on) build the tree for you.
+The per-DGGS modules (`h3.compact(cells)` and so on) fill in their grid.
 
 | file | what |
 |---|---|
 | `src/dggs_sets/{h3,s2,a5}.py` | per-DGGS adapters: a `Grid`, polygon fill, and the algorithms bound to it; the interface |
 | `src/dggs_sets/core/tree.py` | `Grid`, `cell_tree`, `descendants`, `cell_to_parent` |
-| `src/dggs_sets/core/compaction.py` | `compact(tree, cells)`, `cocompact(tree, cells)`, `uncompact`, `contains` |
-| `src/dggs_sets/core/design.py` | `design(tree, weights, lam, size)`: the three set-design solvers |
+| `src/dggs_sets/core/compaction.py` | `compact(grid, cells)`, `cocompact(grid, cells)`, `uncompact`, `contains` |
+| `src/dggs_sets/core/design.py` | `design(grid, weights, lam, size)`: the three set-design solvers |
 | `src/dggs_sets/data/` | `states()`, `ct_counties()`, `cellsets(m, geoms, res)`, `nyc_field('h3' or 's2')`; the boundaries are fetched and cached on first use, sources in its README |
 | `src/dggs_sets/plot.py` | drawing helpers: cells, footprints and bags, and `save` (palette PNG) |
 | `scripts/` | the talk's figure and analysis scripts, built on the package |

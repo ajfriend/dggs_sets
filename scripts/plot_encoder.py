@@ -24,7 +24,7 @@ from matplotlib.patches import Rectangle
 
 from dggs_sets.plot import CARVED, IN, NEW, depths, nesting, save
 from dggs_sets.core.compaction import cocompact, compact, uncompact
-from dggs_sets.core.tree import Grid, cell_tree
+from dggs_sets.core.tree import Grid
 
 OUT = Path(__file__).parent.parent / 'talk' / 'figs'
 
@@ -91,11 +91,10 @@ def toy_leaves(ax, cells):
 def toy():
     cells = toy_cells()
     costs = toy_costs(cells)
-    tree = cell_tree(TOY, cells)
-    bag = cocompact(tree, cells)
+    bag = cocompact(TOY, cells)
     assert costs(ROOT)[0] == len(bag), (costs(ROOT), len(bag))
     assert uncompact(TOY, bag, DEPTH) == cells
-    compacted = compact(tree, cells)
+    compacted = compact(TOY, cells)
     nest = Counter(nesting(TOY, bag).values())
     print(f'toy: {len(cells)} leaves, {len(compacted)} compacted, {len(bag)} tokens,',
           'by depth', dict(sorted(nest.items())), '; root costs', costs(ROOT))

@@ -6,27 +6,26 @@ ancestors (itself included) appear in the bag. Every set of cells is a valid
 bag; standard compaction is the special case with no nesting, so one
 decoder (`uncompact`) handles both.
 
-`compact` and `cocompact` walk `tree = cell_tree(grid, cells)`: at each
-parent `p`, combine its children's answers. Popping each child's answer as
-its parent uses it leaves only the roots' answers at the end. `uncompact`
-and `contains` start from a bag instead, so they take the grid.
+`compact` and `cocompact` walk the tree above `cells`: at each parent `p`,
+combine its children's answers. Popping each child's answer as its parent
+uses it leaves only the roots' answers at the end.
 '''
 from collections import Counter
 
-from .tree import descendants
+from .tree import cell_tree, descendants
 
 
-def compact(tree, cells):
+def compact(grid, cells):
     '''Standard compaction of `cells` (all at one resolution): replace each
     complete sibling group by its parent.'''
     zone = {c: {c} for c in cells}
-    for p, kids in tree:
+    for p, kids in cell_tree(grid, cells):
         kid_zone = _union(zone.pop(k, set()) for k in kids)
         zone[p] = {p} if kid_zone == set(kids) else kid_zone   # every child whole: merge
     return _union(zone.values())
 
 
-def cocompact(tree, cells):
+def cocompact(grid, cells):
     '''The smallest bag describing `cells` (all at one resolution).
 
     Each cell keeps two answers: the smallest bag for its subtree as is
@@ -36,7 +35,7 @@ def cocompact(tree, cells):
     '''
     as_is = {c: {c} for c in cells}
     flipped = {c: set() for c in cells}
-    for p, kids in tree:
+    for p, kids in cell_tree(grid, cells):
         kid_as_is = _union(as_is.pop(k, set()) for k in kids)       # a child with nothing wanted: free
         kid_flipped = _union(flipped.pop(k, {k}) for k in kids)     # ...or a token to turn it all out
         as_is[p] = _smaller(kid_as_is, kid_flipped | {p})

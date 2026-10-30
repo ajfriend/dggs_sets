@@ -9,13 +9,13 @@ from dggs_sets.core.compaction import cocompact, compact, uncompact
 from dggs_sets.core.design import design
 from dggs_sets import data
 
-from test_core import TOY, leaves, toy
+from test_core import TOY, leaves
 
 LEAVES = sorted(leaves(4, 2))   # one root, two levels down: 16 leaves
 SIZE_OF = {
     'cells': len,
-    'compact': lambda cells: len(toy(compact, cells)),
-    'cocompact': lambda cells: len(toy(cocompact, cells)),
+    'compact': lambda cells: len(compact(TOY, cells)),
+    'cocompact': lambda cells: len(cocompact(TOY, cells)),
 }
 
 
@@ -35,7 +35,7 @@ def every_subset():
 
 def _value(weights, lam, size):
     '''design's objective value, its description, and the size it pays for.'''
-    desc = toy(design, weights, lam, size)
+    desc = design(TOY, weights, lam, size)
     chosen = uncompact(TOY, desc, 2)
     n = SIZE_OF[size](chosen)
     return sum(weights[c] for c in chosen) - lam * n, desc, n
@@ -62,7 +62,7 @@ def test_missing_cells_are_never_chosen():
     for size in SIZE_OF:
         for lam in (0.0, 0.3, 1.0):
             weights = {c: rng.uniform(-1, 1) for c in allowed}
-            assert uncompact(TOY, toy(design, weights, lam, size), 2) <= allowed
+            assert uncompact(TOY, design(TOY, weights, lam, size), 2) <= allowed
 
 
 def test_cocompact_is_the_infinite_weight_case():

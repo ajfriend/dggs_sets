@@ -3,10 +3,10 @@ import a5 as _a5
 from shapely.geometry import Polygon
 
 from . import _adapter
-from .core import compaction, tree as _tree
+from .core import compaction
 from .core.design import design as _design
-from ._adapter import bind, bind_tree
-from .core.tree import Grid
+from .core.tree import Grid, cell_to_parent as _cell_to_parent
+from ._adapter import bind
 
 grid = Grid(
     parent=_a5.cell_to_parent,
@@ -45,12 +45,12 @@ def cell_to_boundary(cell):
     return Polygon(_a5.cell_to_boundary(cell))
 
 
-compact = bind_tree(compaction.compact, grid)
-cocompact = bind_tree(compaction.cocompact, grid)
+compact = bind(compaction.compact, grid)
+cocompact = bind(compaction.cocompact, grid)
 uncompact = bind(compaction.uncompact, grid)
 contains = bind(compaction.contains, grid)
-design = bind_tree(_design, grid)
-cell_to_parent = bind(_tree.cell_to_parent, grid)
+design = bind(_design, grid)
+cell_to_parent = bind(_cell_to_parent, grid)
 footprint = bind(_adapter.footprint, grid, cell_to_boundary)
 
 
