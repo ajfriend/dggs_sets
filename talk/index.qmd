@@ -690,7 +690,7 @@ Code: [github.com/ajfriend/dggs_sets](https://github.com/ajfriend/dggs_sets)
 
 :::: {.columns}
 ::: {.column width="45%"}
-- DGGS cells have parents and children
+- DGGS cells have hierarchical parent/child relationships
     - H3: 7 children; S2 and A5: 4
 - if all cell's children present, parent **stands in** for them
     - logically identical (need to know target resolution)
@@ -763,7 +763,7 @@ H3 · res 8<br>compacted: 2.7k cells<br>drawn as **footprints**: each cell's res
 ::: {.column width="35%"}
 ### A closer look
 
-- compaction is **stuck** near the edge: groups that are *almost* full
+- opportunities to improve the "compactability"
 - three different situations
 :::
 ::: {.column width="65%"}
