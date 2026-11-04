@@ -14,9 +14,9 @@ resolution r, compacted, and drawn as:
 
 S2 children nest exactly, so G(c) = F_r(c) and it skips step 2.
 
-Before those, `coarse` draws the whole state in each system at a coarse
-resolution (COARSE: a few thousand cells) and one level coarser, to show each
-system's cell shapes.
+Before those, `polygon` draws the state on its own, and `coarse` draws it
+in each system at a coarse resolution (COARSE: a few thousand cells) and one
+level coarser, to show each system's cell shapes.
 
     uv run scripts/plot_ct.py
 '''
@@ -107,22 +107,40 @@ def label(ax, counties):
                 bbox=dict(boxstyle='round,pad=0.3', fc='white', ec='none', alpha=0.8))
 
 
+def state_axes(geom):
+    '''A figure framing the state, shared by `polygon` and `coarse` so the
+    slides line up.'''
+    xlim, ylim, aspect, figsize = frame([geom], pad=0.08)
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.set_xlim(*xlim)
+    ax.set_ylim(*ylim)
+    ax.set_aspect(aspect)
+    ax.set_axis_off()
+    return fig, ax
+
+
+def polygon():
+    '''The state polygon by itself, before any cells: ct_state.png.'''
+    geom = data.states()['Connecticut']
+    fig, ax = state_axes(geom)
+    ax.add_patch(patch(geom, **IN | dict(ec=BOUNDARY['color'], lw=BOUNDARY['lw'])))
+    path = OUT / 'ct_state.png'
+    save(fig, path, dpi=300, bbox_inches='tight')
+    plt.close(fig)
+    print(f'wrote {path}')
+
+
 def coarse():
     '''The state as coarse cells, at COARSE and one level coarser, one figure
     per system and level: ct_state_{name}_{res}.png.'''
     geom = data.states()['Connecticut']
-    xlim, ylim, aspect, figsize = frame([geom], pad=0.08)
     for name, m in SYSTEMS.items():
         for res, lw in [(COARSE[name], 0.6), (COARSE[name] - 1, 1.0)]:   # coarser cells, heavier edges
             cells = m.polygon_to_cells(geom, res)
-            fig, ax = plt.subplots(figsize=figsize)
+            fig, ax = state_axes(geom)
             ax.add_collection(PolyCollection([geo(m, c, res)[0] for c in sorted(cells)],
                                              facecolors=IN['fc'], edgecolors='black', linewidths=lw))
             outline(ax, geom, **STATE)
-            ax.set_xlim(*xlim)
-            ax.set_ylim(*ylim)
-            ax.set_aspect(aspect)
-            ax.set_axis_off()
             path = OUT / f'ct_state_{name}_{res}.png'
             save(fig, path, dpi=300, bbox_inches='tight')
             plt.close(fig)
@@ -194,6 +212,7 @@ def gap():
 
 
 def main():
+    polygon()
     coarse()
     named()
     query()

@@ -67,6 +67,12 @@ Hierarchical (Co-)Compaction for DGGS Cells
     - easiest if all data shares a single "native" resolution
 
 
+## {background-image="figs/ct_state.png" background-size="contain"}
+
+::: {.note}
+Connecticut
+:::
+
 ## {background-image="figs/ct_state_s2_12.png" background-size="contain"}
 
 ::: {.note}
