@@ -440,7 +440,7 @@ A5 · res 13<br>compacted: footprints
 :::: {.columns}
 ::: {.column width="40%"}
 - one H3 res 5 cell
-- take all res 8 great-grandchildren except one
+- take all res 8 great-grandchildren **except one**
 - how well does it compact?
 :::
 ::: {.column width="60%"}
