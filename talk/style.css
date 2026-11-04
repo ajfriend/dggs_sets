@@ -30,8 +30,23 @@
 .reveal .column li + li {
   margin-top: 0.5em;
 }
-.reveal .column img {
+.reveal .column img {   /* centered: a portrait figure doesn't hug the left edge */
   max-height: 520px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+/* No title bar ("## {.tall}"): the heading tops the left column, and the
+   figure on the right gets the slide's full height */
+.reveal section.tall .columns {
+  align-items: flex-start;
+}
+.reveal section.tall .column h3 {
+  margin-bottom: 0.6em;
+}
+.reveal section.tall .column img {
+  max-height: 650px;
+  max-width: 100%;
 }
 /* Inline code keeps Quarto's default look (the theme colors it); just a bit smaller */
 .reveal .slides li code {

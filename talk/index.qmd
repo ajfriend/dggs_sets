@@ -721,25 +721,29 @@ H3 · res 8<br>compacted: 2.7k cells<br>6x savings!
 H3 · res 8<br>compacted: 2.7k cells<br>drawn as **footprints**: each cell's res 8 descendants<br>(no gaps, no overlaps)
 :::
 
-## Motivation: isochrones
+## {.tall}
 
 :::: {.columns}
-::: {.column width="40%"}
+::: {.column width="35%"}
+### Motivation: isochrones
+
 - given a restaurant, **design** a delivery zone
 - maybe: "all cells within 20 minutes driving time" (isochrone)
 - requires a **universe** of cells we might pick, with times
 - note: **unreachable** (water, parks) different from **outside the universe**
 
 :::
-::: {.column width="60%"}
+::: {.column width="65%"}
 ![](figs/design_field.png)
 :::
 ::::
 
-## Motivation: isochrones
+## {.tall}
 
 :::: {.columns}
-::: {.column width="40%"}
+::: {.column width="35%"}
+### Motivation: isochrones
+
 - 20-minute isochrone: **8,825** H3 res 10 cells
 - many restaurants, storage adds up
 - compact: **3,491** cells
@@ -747,20 +751,22 @@ H3 · res 8<br>compacted: 2.7k cells<br>drawn as **footprints**: each cell's res
 - co-compact: **2,037** cells
     - 4.3x smaller
 :::
-::: {.column width="60%"}
+::: {.column width="65%"}
 ![](figs/design_exact.png)
 :::
 ::::
 
 
-## A closer look
+## {.tall}
 
 :::: {.columns}
-::: {.column width="40%"}
+::: {.column width="35%"}
+### A closer look
+
 - compaction is **stuck** near the edge: groups that are *almost* full
 - three different situations
 :::
-::: {.column width="60%"}
+::: {.column width="65%"}
 ![](figs/design_closer.png)
 :::
 ::::
