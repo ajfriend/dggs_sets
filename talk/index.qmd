@@ -675,6 +675,52 @@ code: `dggs_sets.h3.cocompact`
 
 DGGS Set Design: Compaction-Aware Optimization
 
+## About
+
+- AJ Friend
+- Waymo Product Data Science
+- Past:
+    - Uber Eats Data Science
+    - `h3` and `h3-py` maintainer and steering committee member
+
+Slides: [ajfriend.com/dggs_sets](https://ajfriend.com/dggs_sets)<br>
+Code: [github.com/ajfriend/dggs_sets](https://github.com/ajfriend/dggs_sets)
+
+## Recap: compaction
+
+:::: {.columns}
+::: {.column width="45%"}
+- DGGS cells have parents and children
+    - H3: 7 children; S2 and A5: 4
+- if all cell's children present, parent **stands in** for them
+    - logically identical (need to know target resolution)
+- **compaction**: repeat until nothing is left to merge
+- far fewer cells, **mixed resolutions**
+- *co-compaction*: additional space savings from *removing* cells
+:::
+::: {.column width="55%"}
+![H3 · res 6](figs/hierarchy_h3_children.png)
+:::
+::::
+
+## {background-image="figs/ct_h3_fine_8.png" background-size="contain"}
+
+::: {.note}
+H3 · res 8<br>uncompacted: 17k cells
+:::
+
+## {background-image="figs/ct_h3_geo_8.png" background-size="contain"}
+
+::: {.note}
+H3 · res 8<br>compacted: 2.7k cells<br>6x savings!
+:::
+
+## {background-image="figs/ct_h3_footprint_8.png" background-size="contain"}
+
+::: {.note}
+H3 · res 8<br>compacted: 2.7k cells<br>drawn as **footprints**: each cell's res 8 descendants<br>(no gaps, no overlaps)
+:::
+
 ## Motivation: isochrones
 
 :::: {.columns}
@@ -712,7 +758,7 @@ DGGS Set Design: Compaction-Aware Optimization
 :::: {.columns}
 ::: {.column width="40%"}
 - compaction is **stuck** near the edge: groups that are *almost* full
-- three kinds of spot
+- three different situations
 :::
 ::: {.column width="60%"}
 ![](figs/design_closer.png)
@@ -781,7 +827,7 @@ $$
 
 - $\|S\|$ can be the raw, compacted, or co-compacted size of $S$
 - on its face, maybe a hard discrete optimization problem?
-- but like co-compaction, solvable with **dynamic programming** over the cell hierarchy tree
+- but solvable with **dynamic programming** over the cell hierarchy tree
     - e.g., walk up tree, comparing value of whole parent cells to just the cells selected by their children
 
 ::: {.note}
@@ -1032,8 +1078,4 @@ S2 · λ = 2000
 ## {.interlude}
 
 Thank you! Questions?
-
-::: {.note}
-slides CC BY 4.0 · map tiles © Esri · drive times © OpenStreetMap contributors (ODbL)
-:::
 
